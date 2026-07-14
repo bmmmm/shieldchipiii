@@ -4,6 +4,8 @@
 >
 > Steinschlag-Logbuch für die Windschutzscheibe — läuft komplett im Browser.
 
+**→ [Live demo](https://bmmmm.github.io/shieldchipiii/)** · no framework · no build · no npm
+
 Document every stone chip on your car's windshield: position on the glass,
 size, repair status, insurance reporting. Data lives in `localStorage`;
 sharing between devices works via URL token, JSON export — or the terminal.
@@ -70,6 +72,10 @@ share it with your own devices.
 Kleiner als eine 2-Euro-Münze und außerhalb des Fahrer-Sichtfelds → meist
 reparierbar statt Scheibentausch; die Teilkasko übernimmt die Reparatur oft
 ohne Selbstbeteiligung. Im Sichtfeld oder größer → Werkstatt fragen.
+
+## Support
+
+If this is useful to you: [ko-fi.com/bmabma](https://ko-fi.com/bmabma) ☕
 
 ## License
 
