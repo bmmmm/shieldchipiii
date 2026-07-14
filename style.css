@@ -11,6 +11,13 @@
   --danger: #f85149;
   --glass: #10161d;
   --mono: ui-monospace, 'SF Mono', Monaco, monospace;
+  /* status palette */
+  --st-new: #f0883e;
+  --st-observing: #58a6ff;
+  --st-planned: #d29922;
+  --st-repaired: #3fb950;
+  --st-irreparable: #f85149;
+  --st-replaced: #8b949e;
 }
 @media (prefers-color-scheme: light) {
   :root {
@@ -92,19 +99,79 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 
 .marker { cursor: grab; }
 .marker .hit { fill: transparent; }
-.marker .chip.m-new { fill: var(--warn); stroke: var(--bg); stroke-width: 2; }
-.marker .chip.m-repaired { fill: var(--ok); stroke: var(--bg); stroke-width: 2; }
+/* chips are filled dots with a bg outline; cracks are pure coloured strokes */
+.marker .chip { stroke: var(--bg); stroke-width: 2; }
 .marker .crack { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.marker .crack.m-new { stroke: var(--warn); }
-.marker .crack.m-repaired { stroke: var(--ok); }
+.marker .chip.m-new { fill: var(--st-new); }
+.marker .crack.m-new { stroke: var(--st-new); }
+.marker .chip.m-observing { fill: var(--st-observing); }
+.marker .crack.m-observing { stroke: var(--st-observing); }
+.marker .chip.m-planned { fill: var(--st-planned); }
+.marker .crack.m-planned { stroke: var(--st-planned); }
+.marker .chip.m-repaired { fill: var(--st-repaired); }
+.marker .crack.m-repaired { stroke: var(--st-repaired); }
+.marker .chip.m-irreparable { fill: var(--st-irreparable); }
+.marker .crack.m-irreparable { stroke: var(--st-irreparable); }
+.marker .chip.m-replaced { fill: var(--st-replaced); }
+.marker .crack.m-replaced { stroke: var(--st-replaced); }
 .marker-label { fill: var(--fg); font-family: var(--mono); font-size: 22px; }
 .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
 
-.legend { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
-.lg.new { color: var(--warn); }
-.lg.repaired { color: var(--ok); }
-.lg.crack { color: var(--warn); }
+.legend { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.lg { font-size: 15px; vertical-align: -1px; }
+.lg.m-new { color: var(--st-new); }
+.lg.m-observing { color: var(--st-observing); }
+.lg.m-planned { color: var(--st-planned); }
+.lg.m-repaired { color: var(--st-repaired); }
+.lg.m-irreparable { color: var(--st-irreparable); }
+.lg.m-replaced { color: var(--st-replaced); }
 .lg.fov { color: var(--accent); }
+
+/* floating marker popup */
+#glassStage { position: relative; }
+.marker-popup {
+  position: absolute; z-index: 5; width: 300px; max-width: 82vw;
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
+  padding: 10px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.35); font-size: 13px;
+}
+.popup-head { display: flex; justify-content: space-between; align-items: center; }
+.popup-head strong { font-size: 14px; }
+.pop-x { font-size: 18px; line-height: 1; padding: 0 6px; }
+.rec { margin: 8px 0; padding: 7px 9px; border-radius: 6px; border-left: 3px solid var(--muted); background: rgba(127,127,127,.08); }
+.rec-label { color: var(--muted); }
+.rec.rec-ok { border-left-color: var(--ok); }
+.rec.rec-warn { border-left-color: var(--warn); }
+.rec.rec-danger { border-left-color: var(--danger); }
+.popup-fields { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 6px 0; }
+.pf { color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.pf select { color: var(--fg); }
+.pf-check { cursor: pointer; }
+.timeline { margin: 8px 0; }
+.tl-head { color: var(--accent); font-size: 12px; margin-bottom: 3px; }
+.timeline ul { list-style: none; margin: 0; padding: 0; }
+.timeline li { padding: 2px 0; border-bottom: 1px dotted var(--line); display: flex; justify-content: space-between; gap: 6px; }
+.timeline li:last-child { border-bottom: none; }
+.tl-del { border: none; background: transparent; color: var(--muted); padding: 0 4px; font-size: 14px; }
+.tl-del:hover { color: var(--danger); }
+.add-event { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.ae-row { display: flex; gap: 6px; }
+.ae-row select { flex: 1; }
+.add-event input, .add-event select { padding: 4px 8px; }
+.pop-del { margin-top: 8px; width: 100%; font-size: 12px; }
+
+/* recommendation dot in the entry table */
+.rec-dot { position: relative; }
+.rec-dot::before { content: "●"; margin-right: 5px; }
+.rec-dot.rec-ok::before { color: var(--ok); }
+.rec-dot.rec-warn::before { color: var(--warn); }
+.rec-dot.rec-danger::before { color: var(--danger); }
+#chipTable td.sym { text-align: center; }
+#chipTable tr.st-new td.sym { color: var(--st-new); }
+#chipTable tr.st-observing td.sym { color: var(--st-observing); }
+#chipTable tr.st-repair_planned td.sym { color: var(--st-planned); }
+#chipTable tr.st-repaired td.sym { color: var(--st-repaired); }
+#chipTable tr.st-irreparable td.sym { color: var(--st-irreparable); }
+#chipTable tr.st-replaced td.sym { color: var(--st-replaced); }
 
 /* chip table */
 #chipTable table { width: 100%; border-collapse: collapse; }
@@ -112,15 +179,6 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 #chipTable tr { cursor: pointer; }
 #chipTable tr:hover td { background: var(--panel); }
 #chipTable tr.selected td { background: var(--panel); box-shadow: inset 2px 0 var(--accent); }
-#chipTable tr.new td:nth-child(2) { color: var(--warn); }
-#chipTable tr.repaired td:nth-child(2) { color: var(--ok); }
-
-/* detail form */
-.detail { border: 1px solid var(--accent); border-radius: 6px; padding: 12px; background: var(--panel); }
-.detail-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.grid { display: grid; grid-template-columns: 170px 1fr; gap: 6px 10px; align-items: center; margin: 4px 0; }
-.grid label { color: var(--muted); }
-#deleteChip { margin-top: 10px; }
 
 .rule { border-left: 3px solid var(--warn); padding-left: 12px; }
 .rule p { margin: 4px 0; color: var(--muted); }
@@ -134,6 +192,5 @@ footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--line);
 footer a { color: var(--accent); text-decoration: none; }
 
 @media (max-width: 560px) {
-  .grid { grid-template-columns: 1fr; gap: 2px; }
-  .grid label { margin-top: 6px; }
+  .marker-popup { width: 260px; }
 }

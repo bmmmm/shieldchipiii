@@ -3,6 +3,13 @@
 (function () {
   "use strict";
   var shapes = window.SC.shapes;
+  var logic = window.SC.logic;
+
+  // CSS marker class per current status.
+  var STATUS_CLASS = {
+    new: "m-new", observing: "m-observing", repair_planned: "m-planned",
+    repaired: "m-repaired", irreparable: "m-irreparable", replaced: "m-replaced",
+  };
 
   var M = 20;          // outer margin in viewBox units
   var BOTTOM_W = 960;  // glass bottom edge width in viewBox units
@@ -24,7 +31,7 @@
   }
 
   function markerGlyph(chip) {
-    var cls = chip.status === "repaired" ? "m-repaired" : "m-new";
+    var cls = STATUS_CLASS[logic.currentStatus(chip)] || "m-new";
     if (/^crack/.test(chip.size)) {
       var half = { crackS: 14, crackM: 22, crackL: 32 }[chip.size] || 22;
       var d = "M" + -half + ",5 l" + half * 0.45 + ",-11 l" + half * 0.4 + ",13 l" +
@@ -101,6 +108,21 @@
     return box.x >= e.left - 0.03 && box.x <= e.right + 0.03;
   }
 
+  // Marker centre in pixels relative to the SVG element's top-left — used to
+  // place the floating popup next to the marker.
+  function markerElementPos(svg, car, chip) {
+    var rect = svg.getBoundingClientRect();
+    var vb = svg.viewBox.baseVal;
+    var p = shapes.paramsFor(car);
+    var box = shapes.chipToBox(p, chip);
+    var vx = M + box.x * BOTTOM_W;
+    var vy = M + box.y * glassHeight(car);
+    return { x: (vx / vb.width) * rect.width, y: (vy / vb.height) * rect.height };
+  }
+
   window.SC = window.SC || {};
-  window.SC.render = { windshield: windshield, clientToBox: clientToBox, onGlass: onGlass, esc: esc };
+  window.SC.render = {
+    windshield: windshield, clientToBox: clientToBox, onGlass: onGlass,
+    markerElementPos: markerElementPos, esc: esc,
+  };
 })();

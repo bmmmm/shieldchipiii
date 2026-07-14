@@ -2,18 +2,18 @@
  * ASCII") and the terminal CLI. UMD-ish like shapes.js. */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./shapes.js"));
+    module.exports = factory(require("./shapes.js"), require("./logic.js"));
   } else {
     root.SC = root.SC || {};
-    root.SC.ascii = factory(root.SC.shapes);
+    root.SC.ascii = factory(root.SC.shapes, root.SC.logic);
   }
-})(typeof self !== "undefined" ? self : this, function (shapes) {
+})(typeof self !== "undefined" ? self : this, function (shapes, logic) {
   "use strict";
 
-  // Marker char: crack sizes get 'x', chips 'o'; repaired anything gets '*'.
+  // Marker char reflects the current status (o=new ?=observing @=planned
+  // *=repaired X=irreparable ==replaced).
   function markerChar(chip) {
-    if (chip.status === "repaired") return "*";
-    return /^crack/.test(chip.size) ? "x" : "o";
+    return logic.STATUS_SYMBOL[logic.currentStatus(chip)] || "o";
   }
 
   function renderAscii(car, opts) {

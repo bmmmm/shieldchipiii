@@ -1,30 +1,42 @@
-/* shieldchipiii — UI wiring. */
+/* shieldchipiii — UI wiring: windshield, floating marker popup, event timeline. */
 (function () {
   "use strict";
   var store = window.SC.store, shapes = window.SC.shapes, render = window.SC.render;
-  var share = window.SC.share, i18n = window.SC.i18n, ascii = window.SC.ascii;
+  var share = window.SC.share, i18n = window.SC.i18n, ascii = window.SC.ascii, logic = window.SC.logic;
   var t = i18n.t;
 
   var state = store.load();
   var selectedId = null;
-  var drag = null; // { id, moved }
-  // A click event always follows pointerup; after a marker tap/drag the DOM was
-  // re-rendered, so that click would hit the bare SVG and create a bogus chip.
-  var suppressClick = false;
+  var drag = null;            // { id, moved }
+  var suppressClick = false;  // swallow the click that trails a marker pointerup
 
   var $ = function (id) { return document.getElementById(id); };
   var svg = $("windshield");
+  var popup = $("markerPopup");
 
-  var SIZES = ["c10", "c50", "e2", "crackS", "crackM", "crackL"];
-  var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", e2: "sizeE2", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
   var SHAPE_KEY = { compact: "shapeCompact", sedan: "shapeSedan", suv: "shapeSuv", van: "shapeVan", sport: "shapeSport" };
+  var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", e2: "sizeE2", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
+  var STATUS_KEY = {
+    new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
+    repaired: "statusRepaired", irreparable: "statusIrreparable", replaced: "statusReplaced",
+  };
+  var EVENT_KEY = {
+    observing: "evObserving", repair_planned: "evRepairPlanned", repaired: "evRepaired",
+    irreparable: "evIrreparable", replaced: "evReplaced", insurance_reported: "evInsuranceReported",
+    note: "evNote", new: "evNew",
+  };
+  // What the user can add from the timeline (all but the implicit initial "new").
+  var ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "replaced", "insurance_reported", "note"];
+  var WHERE_TYPES = { repaired: 1, repair_planned: 1, replaced: 1 };
 
   function car() { return store.activeCar(state); }
   function chipById(id) { return car().chips.find(function (k) { return k.id === id; }); }
   function persist() { store.save(state); }
   function touchCar() { car().up = store.now(); }
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function esc(s) { return render.esc(s); }
 
-  // ---------- rendering ----------
+  // ---------- static + structural rendering ----------
 
   function applyStaticI18n() {
     document.documentElement.lang = i18n.get();
@@ -33,12 +45,24 @@
     $("langToggle").textContent = i18n.get() === "de" ? "EN" : "DE";
   }
 
+  function renderLegend() {
+    var items = [
+      ['<span class="lg m-new">●</span>', "statusNew"],
+      ['<span class="lg m-observing">●</span>', "statusObserving"],
+      ['<span class="lg m-planned">●</span>', "statusRepairPlanned"],
+      ['<span class="lg m-repaired">●</span>', "statusRepaired"],
+      ['<span class="lg m-irreparable">●</span>', "statusIrreparable"],
+      ['<span class="lg m-replaced">●</span>', "statusReplaced"],
+      ['<span class="lg fov">▒</span>', "legendFov"],
+    ];
+    $("legend").innerHTML = items.map(function (it) { return it[0] + " " + esc(t(it[1])); }).join(" · ");
+  }
+
   function renderCarTabs() {
     var html = state.cars.map(function (c) {
-      var name = c.name || "🚗";
-      return '<button class="tab' + (c.id === car().id ? " active" : "") + '" data-car="' + render.esc(c.id) + '">' + render.esc(name) + "</button>";
+      return '<button class="tab' + (c.id === car().id ? " active" : "") + '" data-car="' + esc(c.id) + '">' + esc(c.name || "🚗") + "</button>";
     }).join("");
-    html += '<button class="tab add" id="addCar">' + render.esc(t("addCar")) + "</button>";
+    html += '<button class="tab add" id="addCar">' + esc(t("addCar")) + "</button>";
     $("carTabs").innerHTML = html;
   }
 
@@ -47,7 +71,7 @@
     $("carName").value = c.name;
     var p = shapes.paramsFor(c);
     $("shapeButtons").innerHTML = shapes.PRESET_ORDER.map(function (key) {
-      return '<button class="shape-btn' + (c.shape === key && !c.adjust ? " active" : "") + '" data-shape="' + key + '">' + render.esc(t(SHAPE_KEY[key])) + "</button>";
+      return '<button class="shape-btn' + (c.shape === key && !c.adjust ? " active" : "") + '" data-shape="' + key + '">' + esc(t(SHAPE_KEY[key])) + "</button>";
     }).join("");
     $("adjTop").value = Math.round(p.top * 100);
     $("adjHeight").value = Math.round(p.aspect * 100);
@@ -56,78 +80,196 @@
     $("wheelRight").classList.toggle("active", c.wheel === "right");
   }
 
-  function badgesFor(k) {
-    var out = [];
-    if (k.fov) out.push("⌖");
-    if (k.insurance) out.push("🛡");
-    return out.join(" ");
-  }
-
   function renderChipTable() {
     var chips = car().chips;
     if (!chips.length) {
-      $("chipTable").innerHTML = '<p class="muted">' + render.esc(t("noChips")) + "</p>";
+      $("chipTable").innerHTML = '<p class="muted">' + esc(t("noChips")) + "</p>";
       return;
     }
     var rows = chips.map(function (k, i) {
-      var sym = ascii.markerChar(k);
-      var statusTxt = t(k.status === "repaired" ? "statusRepaired" : "statusNew");
-      return '<tr class="' + (k.id === selectedId ? "selected " : "") + (k.status === "repaired" ? "repaired" : "new") + '" data-id="' + render.esc(k.id) + '">' +
-        "<td>" + (i + 1) + "</td><td>" + sym + "</td><td>" + render.esc(t(SIZE_KEY[k.size] || k.size)) + "</td>" +
-        "<td>" + render.esc(statusTxt) + "</td><td>" + render.esc(k.found || "") + "</td><td>" + badgesFor(k) + "</td></tr>";
+      var status = logic.currentStatus(k);
+      var rec = logic.recommend(k);
+      var found = (logic.timeline(k)[0] || {}).date || "";
+      var badges = (k.fov ? "⌖ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
+      return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '">' +
+        "<td>" + (i + 1) + "</td>" +
+        '<td class="sym">' + ascii.markerChar(k) + "</td>" +
+        "<td>" + esc(t(SIZE_KEY[k.size] || k.size)) + "</td>" +
+        "<td>" + esc(t(STATUS_KEY[status])) + "</td>" +
+        "<td>" + esc(found) + "</td>" +
+        '<td class="rec-dot rec-' + rec.level + '" title="' + esc(t(rec.key)) + '">' + badges + "</td></tr>";
     }).join("");
-    $("chipTable").innerHTML = '<table><tbody>' + rows + "</tbody></table>";
+    $("chipTable").innerHTML = "<table><tbody>" + rows + "</tbody></table>";
   }
 
-  function renderDetail() {
-    var k = selectedId && chipById(selectedId);
-    $("detail").hidden = !k;
-    if (!k) return;
-    $("chipSize").innerHTML = SIZES.map(function (s) {
-      return '<option value="' + s + '"' + (k.size === s ? " selected" : "") + ">" + render.esc(t(SIZE_KEY[s])) + "</option>";
-    }).join("");
-    $("chipStatus").innerHTML = ["new", "repaired"].map(function (s) {
-      return '<option value="' + s + '"' + (k.status === s ? " selected" : "") + ">" + render.esc(t(s === "new" ? "statusNew" : "statusRepaired")) + "</option>";
-    }).join("");
-    $("chipFov").checked = !!k.fov;
-    $("chipFound").value = k.found || "";
-    $("chipNote").value = k.note || "";
-    $("repairFields").hidden = k.status !== "repaired";
-    $("chipRepairedAt").value = k.repairedAt || "";
-    $("chipRepairedBy").value = k.repairedBy || "";
-    $("chipInsurance").checked = !!k.insurance;
-    $("insuranceDateField").hidden = !k.insurance;
-    $("chipInsuranceAt").value = k.insuranceAt || "";
-    var idx = car().chips.indexOf(k) + 1;
-    $("detailTitle").textContent = "#" + idx + " — " + t("position") + " " +
-      Math.round(k.x * 100) + "% / " + Math.round(k.y * 100) + "%";
-  }
+  function renderWindshield() { render.windshield(svg, car(), selectedId); }
 
-  function rerender() {
+  function rerenderAll() {
     applyStaticI18n();
+    renderLegend();
     renderCarTabs();
     renderCarForm();
-    render.windshield(svg, car(), selectedId);
+    renderWindshield();
     renderChipTable();
-    renderDetail();
   }
 
-  // ---------- chip edits ----------
+  // ---------- marker popup ----------
 
-  function updateChip(fields) {
-    var k = chipById(selectedId);
-    if (!k) return;
-    Object.assign(k, fields, { up: store.now() });
-    persist();
-    rerender();
+  function buildPopup(chip) {
+    var idx = car().chips.indexOf(chip) + 1;
+    var status = logic.currentStatus(chip);
+    var rec = logic.recommend(chip);
+    var tl = logic.timeline(chip);
+
+    var sizeOpts = logic.SIZES.map(function (s) {
+      return '<option value="' + s + '"' + (chip.size === s ? " selected" : "") + ">" + esc(t(SIZE_KEY[s])) + "</option>";
+    }).join("");
+
+    var tlRows = tl.map(function (e) {
+      var line = e.date + " — " + esc(t(EVENT_KEY[e.type] || e.type));
+      var extra = [];
+      if (e.where) extra.push(esc(e.where));
+      if (e.note) extra.push("„" + esc(e.note) + "“");
+      if (extra.length) line += " · " + extra.join(" · ");
+      var del = tl.length > 1 ? '<button class="tl-del" data-act="delEvent" data-id="' + esc(e.id) + '" title="' + esc(t("deleteEvent")) + '">×</button>' : "";
+      return '<li class="tl-' + e.type + '">' + line + del + "</li>";
+    }).join("");
+
+    var addOpts = ADDABLE.map(function (ty) {
+      return '<option value="' + ty + '">' + esc(t(EVENT_KEY[ty])) + "</option>";
+    }).join("");
+
+    popup.innerHTML =
+      '<div class="popup-head">' +
+        "<strong>#" + idx + " · " + esc(t(STATUS_KEY[status])) + "</strong>" +
+        '<button class="ghost pop-x" data-act="close" title="' + esc(t("close")) + '">×</button>' +
+      "</div>" +
+      '<div class="rec rec-' + rec.level + '"><span class="rec-label">' + esc(t("recommendation")) + ":</span> " + esc(t(rec.key)) + "</div>" +
+      '<div class="popup-fields">' +
+        '<label class="pf">' + esc(t("size")) + ' <select data-act="size">' + sizeOpts + "</select></label>" +
+        '<label class="pf pf-check"><input type="checkbox" data-act="fov"' + (chip.fov ? " checked" : "") + "> " + esc(t("fov")) + "</label>" +
+      "</div>" +
+      '<div class="timeline"><div class="tl-head">' + esc(t("timeline")) + "</div><ul>" + tlRows + "</ul></div>" +
+      '<form class="add-event" data-act="addEvent">' +
+        '<div class="ae-row">' +
+          '<select data-field="type">' + addOpts + "</select>" +
+          '<input type="date" data-field="date" value="' + today() + '">' +
+        "</div>" +
+        '<input class="ae-where" data-field="where" placeholder="' + esc(t("eventWherePh")) + '" maxlength="60" hidden>' +
+        '<input class="ae-note" data-field="note" placeholder="' + esc(t("eventNote")) + '" maxlength="200">' +
+        '<button type="submit">' + esc(t("saveEvent")) + "</button>" +
+      "</form>" +
+      '<button class="ghost danger pop-del" data-act="delChip">' + esc(t("deleteChip")) + "</button>";
+    updateWhereVisibility();
   }
 
-  // ---------- events ----------
+  function updateWhereVisibility() {
+    var sel = popup.querySelector('[data-field="type"]');
+    var where = popup.querySelector(".ae-where");
+    if (sel && where) where.hidden = !WHERE_TYPES[sel.value];
+  }
 
-  $("langToggle").addEventListener("click", function () {
-    i18n.set(i18n.get() === "de" ? "en" : "de");
-    rerender();
+  function positionPopup(chip) {
+    var pos = render.markerElementPos(svg, car(), chip);
+    var stage = $("glassStage");
+    var pw = popup.offsetWidth, ph = popup.offsetHeight;
+    var sw = stage.clientWidth, sh = stage.clientHeight;
+    var left = pos.x + 22;
+    if (left + pw > sw) left = pos.x - 22 - pw;
+    left = Math.max(4, Math.min(sw - pw - 4, left));
+    var top = Math.max(4, Math.min(sh - ph - 4, pos.y - ph / 2));
+    popup.style.left = left + "px";
+    popup.style.top = top + "px";
+  }
+
+  function openPopup(id) {
+    var chip = chipById(id);
+    if (!chip) { closePopup(); return; }
+    selectedId = id;
+    popup.hidden = false;
+    buildPopup(chip);
+    positionPopup(chip);
+    renderWindshield();
+    renderChipTable();
+  }
+
+  function refreshPopup() {
+    var chip = chipById(selectedId);
+    if (!chip) { closePopup(); return; }
+    buildPopup(chip);
+    positionPopup(chip);
+  }
+
+  function closePopup() {
+    selectedId = null;
+    popup.hidden = true;
+    popup.innerHTML = "";
+    renderWindshield();
+    renderChipTable();
+  }
+
+  // ---------- popup interactions (delegated) ----------
+
+  popup.addEventListener("click", function (e) {
+    var act = e.target.closest("[data-act]");
+    if (!act) return;
+    var kind = act.dataset.act;
+    if (kind === "close") { closePopup(); return; }
+    if (kind === "delChip") {
+      if (!confirm(t("confirmDeleteChip"))) return;
+      car().chips = car().chips.filter(function (k) { return k.id !== selectedId; });
+      touchCar();
+      persist();
+      closePopup();
+      renderWindshield();
+      renderChipTable();
+      return;
+    }
+    if (kind === "delEvent") {
+      var chip = chipById(selectedId);
+      chip.events = chip.events.filter(function (ev) { return ev.id !== act.dataset.id; });
+      chip.up = store.now();
+      persist();
+      refreshPopup();
+      renderWindshield();
+      renderChipTable();
+    }
   });
+
+  popup.addEventListener("change", function (e) {
+    var el = e.target.closest("[data-act], [data-field]");
+    if (!el) return;
+    var chip = chipById(selectedId);
+    if (!chip) return;
+    if (el.dataset.act === "size") { chip.size = el.value; chip.up = store.now(); persist(); refreshPopup(); renderWindshield(); renderChipTable(); }
+    else if (el.dataset.act === "fov") { chip.fov = el.checked; chip.up = store.now(); persist(); refreshPopup(); renderWindshield(); renderChipTable(); }
+    else if (el.dataset.field === "type") { updateWhereVisibility(); }
+  });
+
+  popup.addEventListener("submit", function (e) {
+    if (!e.target.closest('[data-act="addEvent"]')) return;
+    e.preventDefault();
+    var chip = chipById(selectedId);
+    if (!chip) return;
+    var form = e.target;
+    var type = form.querySelector('[data-field="type"]').value;
+    var date = form.querySelector('[data-field="date"]').value || today();
+    var note = form.querySelector('[data-field="note"]').value.trim();
+    var where = form.querySelector('[data-field="where"]').value.trim();
+    var extra = {};
+    if (note) extra.note = note;
+    if (where && WHERE_TYPES[type]) extra.where = where;
+    chip.events.push(logic.makeEvent(type, date, extra));
+    chip.up = store.now();
+    persist();
+    refreshPopup();
+    renderWindshield();
+    renderChipTable();
+  });
+
+  // ---------- top controls ----------
+
+  $("langToggle").addEventListener("click", function () { i18n.set(i18n.get() === "de" ? "en" : "de"); closePopup(); rerenderAll(); });
 
   $("carTabs").addEventListener("click", function (e) {
     var btn = e.target.closest("button");
@@ -139,18 +281,13 @@
     } else {
       state.activeCar = btn.dataset.car;
     }
-    selectedId = null;
+    closePopup();
     persist();
-    rerender();
-    if (e.target.closest("#addCar")) $("carName").focus();
+    rerenderAll();
+    if (btn.id === "addCar") $("carName").focus();
   });
 
-  $("carName").addEventListener("input", function () {
-    car().name = this.value;
-    touchCar();
-    persist();
-    renderCarTabs();
-  });
+  $("carName").addEventListener("input", function () { car().name = this.value; touchCar(); persist(); renderCarTabs(); });
 
   $("shapeButtons").addEventListener("click", function (e) {
     var btn = e.target.closest("[data-shape]");
@@ -159,48 +296,39 @@
     car().adjust = null;
     touchCar();
     persist();
-    rerender();
+    closePopup();
+    rerenderAll();
   });
 
   function onAdjust() {
-    car().adjust = {
-      top: $("adjTop").value / 100,
-      aspect: $("adjHeight").value / 100,
-      round: $("adjRound").value / 100,
-    };
+    car().adjust = { top: $("adjTop").value / 100, aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100 };
     touchCar();
     persist();
-    render.windshield(svg, car(), selectedId);
+    renderWindshield();
   }
-  ["adjTop", "adjHeight", "adjRound"].forEach(function (id) { $(id).addEventListener("input", onAdjust); });
-  $("adjReset").addEventListener("click", function () {
-    car().adjust = null;
-    touchCar();
-    persist();
-    rerender();
-  });
+  ["adjTop", "adjHeight", "adjRound"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
-  $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); rerender(); });
-  $("wheelRight").addEventListener("click", function () { car().wheel = "right"; touchCar(); persist(); rerender(); });
+  $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); closePopup(); rerenderAll(); });
+  $("wheelRight").addEventListener("click", function () { car().wheel = "right"; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   $("deleteCar").addEventListener("click", function () {
     if (!confirm(t("confirmDeleteCar"))) return;
     state.cars = state.cars.filter(function (c) { return c.id !== car().id; });
     if (!state.cars.length) state.cars.push(store.newCar(""));
     state.activeCar = state.cars[0].id;
-    selectedId = null;
+    closePopup();
     persist();
-    rerender();
+    rerenderAll();
   });
 
-  // glass: click to add, drag markers to move
+  // ---------- glass: add / select / drag ----------
+
   svg.addEventListener("pointerdown", function (e) {
     var markerEl = e.target.closest(".marker");
     if (markerEl) {
-      selectedId = markerEl.dataset.id;
-      drag = { id: selectedId, moved: false };
+      drag = { id: markerEl.dataset.id, moved: false };
       svg.setPointerCapture(e.pointerId);
-      rerender();
       e.preventDefault();
     }
   });
@@ -209,90 +337,62 @@
     if (!drag) return;
     var k = chipById(drag.id);
     if (!k) return;
+    if (!drag.moved) { popup.hidden = true; } // hide while dragging
     var box = render.clientToBox(svg, car(), e.clientX, e.clientY);
     var pos = shapes.boxToChip(shapes.paramsFor(car()), box.x, box.y);
     k.x = pos.x; k.y = pos.y;
     drag.moved = true;
-    render.windshield(svg, car(), selectedId);
+    renderWindshield();
   });
 
   svg.addEventListener("pointerup", function (e) {
-    if (drag) {
-      if (drag.moved) {
-        var k = chipById(drag.id);
-        if (k) k.up = store.now();
-        persist();
-      }
-      drag = null;
-      suppressClick = true;
-      rerender();
-    }
+    if (!drag) return;
+    var id = drag.id, moved = drag.moved;
+    drag = null;
+    suppressClick = true;
+    var k = chipById(id);
+    if (moved && k) { k.up = store.now(); persist(); }
+    openPopup(id); // select + (re)position popup at the marker
   });
 
   svg.addEventListener("click", function (e) {
     if (suppressClick) { suppressClick = false; return; }
-    if (e.target.closest(".marker")) return; // handled via pointerdown
+    if (e.target.closest(".marker")) return;
     var box = render.clientToBox(svg, car(), e.clientX, e.clientY);
-    if (!render.onGlass(car(), box)) { selectedId = null; rerender(); return; }
+    if (!render.onGlass(car(), box)) { closePopup(); return; }
     var p = shapes.paramsFor(car());
     var pos = shapes.boxToChip(p, box.x, box.y);
     var chip = store.newChip(pos);
     chip.fov = shapes.suggestFov(p, chip, car().wheel);
     car().chips.push(chip);
-    selectedId = chip.id;
     persist();
-    rerender();
+    openPopup(chip.id);
   });
 
   $("chipTable").addEventListener("click", function (e) {
     var row = e.target.closest("tr[data-id]");
     if (!row) return;
-    selectedId = row.dataset.id === selectedId ? null : row.dataset.id;
-    rerender();
+    if (row.dataset.id === selectedId) { closePopup(); return; }
+    openPopup(row.dataset.id);
+    $("glassStage").scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
-  $("chipSize").addEventListener("change", function () { updateChip({ size: this.value }); });
-  $("chipStatus").addEventListener("change", function () { updateChip({ status: this.value }); });
-  $("chipFov").addEventListener("change", function () { updateChip({ fov: this.checked }); });
-  $("chipFound").addEventListener("change", function () { updateChip({ found: this.value }); });
-  $("chipNote").addEventListener("change", function () { updateChip({ note: this.value }); });
-  $("chipRepairedAt").addEventListener("change", function () { updateChip({ repairedAt: this.value }); });
-  $("chipRepairedBy").addEventListener("change", function () { updateChip({ repairedBy: this.value }); });
-  $("chipInsurance").addEventListener("change", function () {
-    updateChip({ insurance: this.checked, insuranceAt: this.checked ? (chipById(selectedId).insuranceAt || new Date().toISOString().slice(0, 10)) : "" });
-  });
-  $("chipInsuranceAt").addEventListener("change", function () { updateChip({ insuranceAt: this.value }); });
-
-  $("deleteChip").addEventListener("click", function () {
-    if (!confirm(t("confirmDeleteChip"))) return;
-    car().chips = car().chips.filter(function (k) { return k.id !== selectedId; });
-    selectedId = null;
-    touchCar();
-    persist();
-    rerender();
-  });
-  $("closeDetail").addEventListener("click", function () { selectedId = null; rerender(); });
+  window.addEventListener("resize", function () { if (!popup.hidden && selectedId) positionPopup(chipById(selectedId)); });
 
   // ---------- share ----------
 
   function flash(btn, key) {
     var old = btn.textContent;
     btn.textContent = t(key);
-    setTimeout(function () { btn.textContent = old; rerender(); }, 1200);
+    setTimeout(function () { btn.textContent = old; }, 1200);
   }
 
   async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (e) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
       var ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      var ok = document.execCommand("copy");
-      ta.remove();
-      return ok;
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      var ok = document.execCommand("copy"); ta.remove(); return ok;
     }
   }
 
@@ -300,20 +400,17 @@
     var url = await share.shareUrl(state);
     if (await copyText(url)) flash(this, "copied");
   });
-
   $("copyAscii").addEventListener("click", async function () {
     if (await copyText(ascii.renderAscii(car()))) flash(this, "copied");
   });
-
   $("exportJson").addEventListener("click", function () {
     var blob = new Blob([JSON.stringify({ v: 1, cars: state.cars }, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "shieldchipiii-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.download = "shieldchipiii-" + today() + ".json";
     a.click();
     URL.revokeObjectURL(a.href);
   });
-
   $("importJson").addEventListener("change", function () {
     var file = this.files[0];
     this.value = "";
@@ -334,22 +431,15 @@
     var chips = incoming.cars.reduce(function (n, c) { return n + c.chips.length; }, 0);
     $("importSummary").textContent = t("importSummary", { cars: incoming.cars.length, chips: chips });
     $("importOverlay").hidden = false;
-    $("importMerge").onclick = function () {
-      state = store.merge(state, incoming);
-      finishImport();
-    };
-    $("importReplace").onclick = function () {
-      incoming.activeCar = incoming.cars[0].id;
-      state = incoming;
-      finishImport();
-    };
+    $("importMerge").onclick = function () { state = store.merge(state, incoming); finishImport(); };
+    $("importReplace").onclick = function () { incoming.activeCar = incoming.cars[0].id; state = incoming; finishImport(); };
     $("importCancel").onclick = function () { $("importOverlay").hidden = true; };
     function finishImport() {
       $("importOverlay").hidden = true;
-      selectedId = null;
+      closePopup();
       if (!state.cars.some(function (c) { return c.id === state.activeCar; })) state.activeCar = state.cars[0].id;
       persist();
-      rerender();
+      rerenderAll();
     }
   }
 
@@ -357,16 +447,12 @@
     var hash = location.hash;
     if (!/^#[ij]:/.test(hash)) return;
     history.replaceState(null, "", location.pathname + location.search);
-    try {
-      showImportDialog(await share.decodeToken(hash));
-    } catch (e) {
-      alert(t("importBroken"));
-    }
+    try { showImportDialog(await share.decodeToken(hash)); }
+    catch (e) { alert(t("importBroken")); }
   }
-
   window.addEventListener("hashchange", handleHash);
 
   // ---------- boot ----------
-  rerender();
+  rerenderAll();
   handleHash();
 })();

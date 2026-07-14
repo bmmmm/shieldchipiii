@@ -44,44 +44,17 @@
     </section>
 
     <section class="glass-wrap">
-      <svg id="windshield" role="img" aria-label="windshield diagram"></svg>
-      <p class="legend">
-        <span class="lg new">●</span> <span data-i18n="legendNew"></span> ·
-        <span class="lg repaired">◐</span> <span data-i18n="legendRepaired"></span> ·
-        <span class="lg crack">✛</span> <span data-i18n="legendCrack"></span> ·
-        <span class="lg fov">▒</span> <span data-i18n="legendFov"></span>
-      </p>
+      <div id="glassStage">
+        <svg id="windshield" role="img" aria-label="windshield diagram"></svg>
+        <div id="markerPopup" class="marker-popup" hidden></div>
+      </div>
+      <p class="legend" id="legend"></p>
       <p class="muted hint" data-i18n="hintClick"></p>
     </section>
 
     <section>
       <h2 data-i18n="chips"></h2>
       <div id="chipTable"></div>
-    </section>
-
-    <section id="detail" class="detail" hidden>
-      <div class="detail-head">
-        <strong id="detailTitle"></strong>
-        <button id="closeDetail" class="ghost" data-i18n="close"></button>
-      </div>
-      <div class="grid">
-        <label data-i18n="size"></label><select id="chipSize"></select>
-        <label data-i18n="status"></label><select id="chipStatus"></select>
-        <label data-i18n="found"></label><input id="chipFound" type="date">
-        <label data-i18n="fov"></label><input id="chipFov" type="checkbox">
-        <label data-i18n="insurance"></label><input id="chipInsurance" type="checkbox">
-      </div>
-      <div class="grid" id="insuranceDateField" hidden>
-        <label data-i18n="insuranceAt"></label><input id="chipInsuranceAt" type="date">
-      </div>
-      <div class="grid" id="repairFields" hidden>
-        <label data-i18n="repairedAt"></label><input id="chipRepairedAt" type="date">
-        <label data-i18n="repairedBy"></label><input id="chipRepairedBy" type="text" data-i18n-ph="repairedByPh" maxlength="60">
-      </div>
-      <div class="grid">
-        <label data-i18n="note"></label><input id="chipNote" type="text" maxlength="200">
-      </div>
-      <button id="deleteChip" class="danger" data-i18n="deleteChip"></button>
     </section>
 
     <section class="share">
@@ -125,6 +98,7 @@
   </footer>
 
   <script src="js/shapes.js"></script>
+  <script src="js/logic.js"></script>
   <script src="js/ascii.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/store.js"></script>
