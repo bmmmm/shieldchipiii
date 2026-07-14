@@ -21,6 +21,8 @@
 }
 
 * { box-sizing: border-box; }
+/* `hidden` must win over the display rules below (.overlay/.grid set display). */
+[hidden] { display: none !important; }
 body {
   margin: 0 auto;
   max-width: 860px;
@@ -36,8 +38,6 @@ header { position: relative; padding: 24px 0 4px; }
 h1 { margin: 0; font-size: 26px; letter-spacing: 1px; }
 h2 { font-size: 15px; margin: 24px 0 8px; color: var(--accent); }
 h2::before { content: "» "; color: var(--muted); }
-.cursor { color: var(--accent); animation: blink 1.2s steps(1) infinite; }
-@keyframes blink { 50% { opacity: 0; } }
 .tagline { margin: 2px 0 0; color: var(--muted); }
 #langToggle { position: absolute; top: 28px; right: 0; }
 
