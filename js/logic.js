@@ -8,15 +8,16 @@
   "use strict";
 
   // Event types that set the marker's current status, in lifecycle order.
-  var STATUS_TYPES = ["new", "observing", "repair_planned", "repaired", "irreparable", "replaced"];
+  // Replacing the whole windshield is a vehicle-level action, not a per-chip
+  // status — so "replaced" is intentionally not here.
+  var STATUS_TYPES = ["new", "observing", "repair_planned", "repaired", "irreparable"];
   // Neutral events — recorded in the timeline but don't change the status.
   var NEUTRAL_TYPES = ["insurance_reported", "note"];
   var ALL_TYPES = STATUS_TYPES.concat(NEUTRAL_TYPES);
 
   // Terminal glyph per current status (also drives the SVG marker class).
   var STATUS_SYMBOL = {
-    new: "o", observing: "?", repair_planned: "@", repaired: "*",
-    irreparable: "X", replaced: "=",
+    new: "o", observing: "?", repair_planned: "@", repaired: "*", irreparable: "X",
   };
   var SIZES = ["c10", "c50", "e2", "crackS", "crackM", "crackL"];
 
@@ -54,7 +55,6 @@
   // Returns { key, level } — key is an i18n key, level ∈ ok|warn|danger drives color.
   function recommend(chip) {
     var status = currentStatus(chip);
-    if (status === "replaced") return { key: "recReplaced", level: "ok" };
     if (status === "repaired") return { key: "recWatchRepair", level: "ok" };
     if (status === "irreparable") return { key: "recIrreparable", level: "danger" };
     if (status === "repair_planned") return { key: "recPlanned", level: "warn" };

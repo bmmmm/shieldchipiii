@@ -6,23 +6,25 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  // All values are ratios relative to the bottom edge width (bow: to glass height):
-  //   top    = top edge width / bottom edge width  (< 1: view from inside, top is shorter)
-  //   aspect = glass height / bottom edge width
+  // All widths are ratios of the bounding-box width; aspect/round/bow of height:
+  //   top    = top edge width / bounding-box width    (< 1: view from inside, top is shorter)
+  //   bottom = bottom edge width / bounding-box width (1 = widest; the default)
+  //   aspect = glass height / bounding-box width
   //   round  = corner radius / glass height
   //   bow    = vertical arch of top/bottom edges / glass height (0 = straight;
   //            glass is tallest at the centreline, like a real windshield)
   var PRESETS = {
-    compact: { top: 0.68, aspect: 0.40, round: 0.10, bow: 0.06 },
-    sedan:   { top: 0.62, aspect: 0.36, round: 0.12, bow: 0.07 },
-    suv:     { top: 0.74, aspect: 0.44, round: 0.10, bow: 0.05 },
-    van:     { top: 0.85, aspect: 0.55, round: 0.06, bow: 0.03 },
-    sport:   { top: 0.55, aspect: 0.28, round: 0.16, bow: 0.09 },
+    compact: { top: 0.68, bottom: 1.00, aspect: 0.40, round: 0.10, bow: 0.06 },
+    sedan:   { top: 0.62, bottom: 1.00, aspect: 0.36, round: 0.12, bow: 0.07 },
+    suv:     { top: 0.74, bottom: 1.00, aspect: 0.44, round: 0.10, bow: 0.05 },
+    van:     { top: 0.85, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03 },
+    sport:   { top: 0.55, bottom: 0.96, aspect: 0.28, round: 0.16, bow: 0.09 },
   };
   var PRESET_ORDER = ["compact", "sedan", "suv", "van", "sport"];
 
   var LIMITS = {
     top:    { min: 0.35, max: 0.98 },
+    bottom: { min: 0.50, max: 1.00 },
     aspect: { min: 0.20, max: 0.65 },
     round:  { min: 0.00, max: 0.25 },
     bow:    { min: 0.00, max: 0.15 },
@@ -36,6 +38,7 @@
     var adj = (car && car.adjust) || {};
     return {
       top:    clamp(adj.top    != null ? adj.top    : base.top,    LIMITS.top.min,    LIMITS.top.max),
+      bottom: clamp(adj.bottom != null ? adj.bottom : (base.bottom != null ? base.bottom : 1), LIMITS.bottom.min, LIMITS.bottom.max),
       aspect: clamp(adj.aspect != null ? adj.aspect : base.aspect, LIMITS.aspect.min, LIMITS.aspect.max),
       round:  clamp(adj.round  != null ? adj.round  : base.round,  LIMITS.round.min,  LIMITS.round.max),
       bow:    clamp(adj.bow    != null ? adj.bow    : (base.bow || 0), LIMITS.bow.min, LIMITS.bow.max),
@@ -46,15 +49,15 @@
   // bounding box. With bow > 0 the corners sit inside the box: the top edge
   // arches up to y = 0 at the centre, the bottom edge down to y = h.
   // Returns { h, bow (absolute), tl, tr, br, bl } (each [x, y]).
-  function corners(params, bottomW) {
-    var h = bottomW * params.aspect;
-    var topW = bottomW * params.top;
-    var inset = (bottomW - topW) / 2;
+  function corners(params, boxW) {
+    var h = boxW * params.aspect;
+    var topInset = boxW * (1 - params.top) / 2;
+    var botInset = boxW * (1 - (params.bottom != null ? params.bottom : 1)) / 2;
     var b = h * (params.bow || 0);
     return {
       h: h, bow: b,
-      tl: [inset, b], tr: [bottomW - inset, b],
-      br: [bottomW, h - b], bl: [0, h - b],
+      tl: [topInset, b], tr: [boxW - topInset, b],
+      br: [boxW - botInset, h - b], bl: [botInset, h - b],
     };
   }
 
@@ -63,17 +66,19 @@
   // is the edge arch (a parabola — exactly what a quadratic Bezier traces).
   function edgesAt(params, yFrac) {
     var bow = params.bow || 0;
+    var bottom = params.bottom != null ? params.bottom : 1;
     if (bow > 0.001 && yFrac < bow) {
       var half = (params.top / 2) * Math.sqrt(Math.max(0, yFrac) / bow);
       return { left: 0.5 - half, right: 0.5 + half };
     }
     if (bow > 0.001 && yFrac > 1 - bow) {
-      var halfB = 0.5 * Math.sqrt(Math.max(0, 1 - yFrac) / bow);
+      var halfB = (bottom / 2) * Math.sqrt(Math.max(0, 1 - yFrac) / bow);
       return { left: 0.5 - halfB, right: 0.5 + halfB };
     }
-    var inset = (1 - params.top) / 2;
+    var topInset = (1 - params.top) / 2;
+    var botInset = (1 - bottom) / 2;
     var t = bow > 0.001 ? (yFrac - bow) / (1 - 2 * bow) : yFrac;
-    var left = inset * (1 - t);
+    var left = topInset * (1 - t) + botInset * t;
     return { left: left, right: 1 - left };
   }
 

@@ -26,8 +26,9 @@
     note: "evNote", new: "evNew",
   };
   // What the user can add from the timeline (all but the implicit initial "new").
-  var ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "replaced", "insurance_reported", "note"];
-  var WHERE_TYPES = { repaired: 1, repair_planned: 1, replaced: 1 };
+  // "replaced" is a vehicle-level action (glassSwap), not a per-chip event.
+  var ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "insurance_reported", "note"];
+  var WHERE_TYPES = { repaired: 1, repair_planned: 1 };
 
   function car() { return store.activeCar(state); }
   function chipById(id) { return car().chips.find(function (k) { return k.id === id; }); }
@@ -52,7 +53,6 @@
       ['<span class="lg m-planned">●</span>', "statusRepairPlanned"],
       ['<span class="lg m-repaired">●</span>', "statusRepaired"],
       ['<span class="lg m-irreparable">●</span>', "statusIrreparable"],
-      ['<span class="lg m-replaced">●</span>', "statusReplaced"],
       ['<span class="lg fov">▒</span>', "legendFov"],
     ];
     $("legend").innerHTML = items.map(function (it) { return it[0] + " " + esc(t(it[1])); }).join(" · ");
@@ -74,6 +74,7 @@
       return '<button class="shape-btn' + (c.shape === key && !c.adjust ? " active" : "") + '" data-shape="' + key + '">' + esc(t(SHAPE_KEY[key])) + "</button>";
     }).join("");
     $("adjTop").value = Math.round(p.top * 100);
+    $("adjBottom").value = Math.round(p.bottom * 100);
     $("adjHeight").value = Math.round(p.aspect * 100);
     $("adjRound").value = Math.round(p.round * 100);
     $("adjBow").value = Math.round(p.bow * 100);
@@ -152,10 +153,8 @@
       "</div>" +
       '<div class="timeline"><div class="tl-head">' + esc(t("timeline")) + "</div><ul>" + tlRows + "</ul></div>" +
       '<form class="add-event" data-act="addEvent">' +
-        '<div class="ae-row">' +
-          '<select data-field="type">' + addOpts + "</select>" +
-          '<input type="date" data-field="date" value="' + today() + '">' +
-        "</div>" +
+        '<label class="ae-field"><span>' + esc(t("eventType")) + '</span><select data-field="type">' + addOpts + "</select></label>" +
+        '<label class="ae-field"><span>' + esc(t("eventDate")) + '</span><input type="date" data-field="date" value="' + today() + '"></label>' +
         '<input class="ae-where" data-field="where" placeholder="' + esc(t("eventWherePh")) + '" maxlength="60" hidden>' +
         '<input class="ae-note" data-field="note" placeholder="' + esc(t("eventNote")) + '" maxlength="200">' +
         '<button type="submit">' + esc(t("saveEvent")) + "</button>" +
@@ -302,12 +301,15 @@
   });
 
   function onAdjust() {
-    car().adjust = { top: $("adjTop").value / 100, aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100, bow: $("adjBow").value / 100 };
+    car().adjust = {
+      top: $("adjTop").value / 100, bottom: $("adjBottom").value / 100,
+      aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100, bow: $("adjBow").value / 100,
+    };
     touchCar();
     persist();
     renderWindshield();
   }
-  ["adjTop", "adjHeight", "adjRound", "adjBow"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  ["adjTop", "adjBottom", "adjHeight", "adjRound", "adjBow"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   // Opens a prefilled GitHub issue form with the current shape values, so
@@ -325,6 +327,15 @@
 
   $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); closePopup(); rerenderAll(); });
   $("wheelRight").addEventListener("click", function () { car().wheel = "right"; touchCar(); persist(); closePopup(); rerenderAll(); });
+
+  $("glassSwap").addEventListener("click", function () {
+    if (!confirm(t("confirmGlassSwap", { count: car().chips.length }))) return;
+    car().chips = [];
+    touchCar();
+    closePopup();
+    persist();
+    rerenderAll();
+  });
 
   $("deleteCar").addEventListener("click", function () {
     if (!confirm(t("confirmDeleteCar"))) return;

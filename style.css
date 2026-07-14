@@ -157,8 +157,9 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .tl-del { border: none; background: transparent; color: var(--muted); padding: 0 4px; font-size: 14px; }
 .tl-del:hover { color: var(--danger); }
 .add-event { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
-.ae-row { display: flex; gap: 6px; }
-.ae-row select { flex: 1; }
+.ae-field { display: flex; align-items: center; gap: 8px; }
+.ae-field > span { color: var(--muted); min-width: 46px; }
+.ae-field select, .ae-field input { flex: 1; }
 .add-event input, .add-event select { padding: 4px 8px; }
 .pop-del { margin-top: 8px; width: 100%; font-size: 12px; }
 
@@ -186,7 +187,7 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .rule { border-left: 3px solid var(--warn); padding-left: 12px; }
 .rule p { margin: 4px 0; color: var(--muted); }
 
-.danger-zone { margin-top: 28px; }
+.danger-zone { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; max-width: 420px; }

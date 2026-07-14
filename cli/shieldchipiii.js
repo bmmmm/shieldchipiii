@@ -35,8 +35,8 @@ const REC_LABEL = {
   recIrreparable: "irreparable — arrange a glass replacement",
   recReplaced: "glass replaced — done",
 };
-const ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "replaced", "insurance_reported", "note"];
-const WHERE_TYPES = { repaired: 1, repair_planned: 1, replaced: 1 };
+const ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "insurance_reported", "note"];
+const WHERE_TYPES = { repaired: 1, repair_planned: 1 };
 
 function die(msg) {
   console.error("Error: " + msg);
