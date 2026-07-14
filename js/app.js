@@ -379,6 +379,14 @@
 
   window.addEventListener("resize", function () { if (!popup.hidden && selectedId) positionPopup(chipById(selectedId)); });
 
+  // Click anywhere outside the glass, popup or entry table closes the popup.
+  // The glass and table run their own selection logic, so they're excluded.
+  document.addEventListener("pointerdown", function (e) {
+    if (popup.hidden) return;
+    if (e.target.closest("#markerPopup, #windshield, #chipTable")) return;
+    closePopup();
+  });
+
   // ---------- share ----------
 
   function flash(btn, key) {

@@ -38,7 +38,7 @@
 
     // statuses (current state of a marker)
     status: { de: "Status", en: "Status" },
-    statusNew: { de: "neu", en: "new" },
+    statusNew: { de: "offen", en: "open" },
     statusObserving: { de: "beobachten", en: "observing" },
     statusRepairPlanned: { de: "Reparatur geplant", en: "repair planned" },
     statusRepaired: { de: "repariert", en: "repaired" },

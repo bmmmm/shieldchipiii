@@ -17,7 +17,7 @@ const SIZE_LABEL = {
 };
 const SIZES = logic.SIZES;
 const STATUS_LABEL = {
-  new: "new", observing: "observing", repair_planned: "repair planned",
+  new: "open", observing: "observing", repair_planned: "repair planned",
   repaired: "repaired", irreparable: "irreparable", replaced: "glass replaced",
 };
 const EVENT_LABEL = {
