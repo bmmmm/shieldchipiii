@@ -12,9 +12,10 @@
   };
 
   var M = 20;          // outer margin in viewBox units
-  var BOTTOM_W = 960;  // glass bottom edge width in viewBox units
+  var BOTTOM_W = 960;  // glass bounding-box width in viewBox units
   var VB_W = BOTTOM_W + 2 * M;
-  var DASH_H = 175;    // schematic cockpit strip below the glass
+  var COWL_GAP = 14;   // glass bottom -> dashboard cowl
+  var WHEEL_GAP = 22;  // cowl -> top of the steering wheel
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -26,8 +27,23 @@
     return BOTTOM_W * shapes.paramsFor(car).aspect;
   }
 
+  // viewBox units per real centimetre. Vertical differs from horizontal: the
+  // view from inside is foreshortened, so the same cm covers less picture height.
+  function cmScale(car) {
+    var p = shapes.paramsFor(car);
+    return { x: BOTTOM_W / p.widthCm, y: glassHeight(car) / p.heightCm };
+  }
+
+  // Cockpit strip height follows the (to-scale) wheel, so a 40 cm wheel on a
+  // van still fits without being clipped.
+  function dashHeight(car) {
+    var p = shapes.paramsFor(car);
+    var ry = (p.wheelCm / 2) * cmScale(car).y;
+    return COWL_GAP + WHEEL_GAP + 2 * ry + 24;
+  }
+
   function viewBox(car) {
-    return "0 0 " + VB_W + " " + (glassHeight(car) + DASH_H + 2 * M);
+    return "0 0 " + VB_W + " " + (glassHeight(car) + dashHeight(car) + 2 * M);
   }
 
   function markerGlyph(chip) {
@@ -90,27 +106,33 @@
         '<text class="marker-label" x="18" y="-12">' + (i + 1) + "</text></g>");
     });
 
-    // ---- schematic cockpit below the glass (orientation aid) ----
+    // ---- schematic cockpit below the glass, drawn to the same cm scale ----
+    // Everything here is sized in real centimetres and squashed vertically by
+    // the same foreshortening as the glass, so a round wheel reads as an ellipse.
     var wx = shapes.wheelX(car.wheel) * BOTTOM_W;
-    var cowlY = h + 18;
+    var cm = cmScale(car);
+    var cowlY = h + COWL_GAP;
+    var rx = (p.wheelCm / 2) * cm.x, ry = (p.wheelCm / 2) * cm.y;
+    var wy = cowlY + WHEEL_GAP + ry;
+
     // dashboard cowl: a gentle curve across the full width
     parts.push('<path class="dash" d="M-10,' + (cowlY + 10) + " Q" + (BOTTOM_W / 2) + "," + (cowlY - 12) + " " + (BOTTOM_W + 10) + "," + (cowlY + 10) + '"/>');
     // centre console hint down the middle
-    parts.push('<line class="cockpit" x1="' + (BOTTOM_W / 2) + '" y1="' + (cowlY + 16) + '" x2="' + (BOTTOM_W / 2) + '" y2="' + (cowlY + DASH_H - 40) + '"/>');
-    // instrument binnacle + two round gauges behind the wheel (faint)
-    var gaugeY = cowlY + 36;
-    parts.push('<rect class="cockpit" x="' + (wx - 98) + '" y="' + (cowlY + 6) + '" width="196" height="70" rx="22"/>');
-    parts.push('<circle class="cockpit" cx="' + (wx - 44) + '" cy="' + gaugeY + '" r="23"/>');
-    parts.push('<circle class="cockpit" cx="' + (wx + 44) + '" cy="' + gaugeY + '" r="23"/>');
+    parts.push('<line class="cockpit" x1="' + (BOTTOM_W / 2) + '" y1="' + (cowlY + 16) + '" x2="' + (BOTTOM_W / 2) + '" y2="' + (wy + ry) + '"/>');
+    // instrument binnacle + two round gauges behind the wheel (faint, ~cm sized)
+    var binW = 30 * cm.x, binH = 15 * cm.y, gaugeR = 9 * cm.x / 2;
+    var gaugeY = cowlY + 6 + binH / 2;
+    parts.push('<rect class="cockpit" x="' + (wx - binW / 2) + '" y="' + (cowlY + 6) + '" width="' + binW + '" height="' + binH + '" rx="' + (binH * 0.3) + '"/>');
+    parts.push('<ellipse class="cockpit" cx="' + (wx - binW * 0.22) + '" cy="' + gaugeY + '" rx="' + gaugeR + '" ry="' + (gaugeR * cm.y / cm.x) + '"/>');
+    parts.push('<ellipse class="cockpit" cx="' + (wx + binW * 0.22) + '" cy="' + gaugeY + '" rx="' + gaugeR + '" ry="' + (gaugeR * cm.y / cm.x) + '"/>');
     // steering wheel in front: rim, hub, 3 spokes (3/9/6 o'clock)
-    var wy = cowlY + 82;
-    var R = 56;
-    parts.push('<g class="wheel" transform="translate(' + wx + "," + wy + ')">' +
-      '<circle class="rim" r="' + R + '"/>' +
-      '<circle class="hub" r="14"/>' +
-      '<line x1="' + (-R) + '" y1="0" x2="-14" y2="0"/>' +
-      '<line x1="14" y1="0" x2="' + R + '" y2="0"/>' +
-      '<line x1="0" y1="14" x2="0" y2="' + R + '"/>' +
+    var hubRx = rx * 0.24, hubRy = ry * 0.24;
+    parts.push('<g class="wheel" transform="translate(' + wx.toFixed(1) + "," + wy.toFixed(1) + ')">' +
+      '<ellipse class="rim" rx="' + rx.toFixed(1) + '" ry="' + ry.toFixed(1) + '"/>' +
+      '<ellipse class="hub" rx="' + hubRx.toFixed(1) + '" ry="' + hubRy.toFixed(1) + '"/>' +
+      '<line x1="' + (-rx).toFixed(1) + '" y1="0" x2="' + (-hubRx).toFixed(1) + '" y2="0"/>' +
+      '<line x1="' + hubRx.toFixed(1) + '" y1="0" x2="' + rx.toFixed(1) + '" y2="0"/>' +
+      '<line x1="0" y1="' + hubRy.toFixed(1) + '" x2="0" y2="' + ry.toFixed(1) + '"/>' +
       "</g>");
 
     parts.push("</g>");

@@ -81,6 +81,8 @@
     $("adjBow").value = Math.round(p.bow * 100);
     $("adjWidthCm").value = Math.round(p.widthCm);
     $("adjWidthCmOut").textContent = Math.round(p.widthCm) + " cm";
+    $("adjWheelCm").value = Math.round(p.wheelCm);
+    $("adjWheelCmOut").textContent = Math.round(p.wheelCm) + " cm";
     $("wheelLeft").classList.toggle("active", c.wheel !== "right");
     $("wheelRight").classList.toggle("active", c.wheel === "right");
   }
@@ -313,15 +315,16 @@
     car().adjust = {
       top: $("adjTop").value / 100, bottom: $("adjBottom").value / 100,
       aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100, bow: $("adjBow").value / 100,
-      widthCm: +$("adjWidthCm").value,
+      widthCm: +$("adjWidthCm").value, wheelCm: +$("adjWheelCm").value,
     };
     touchCar();
     persist();
     $("adjWidthCmOut").textContent = $("adjWidthCm").value + " cm";
+    $("adjWheelCmOut").textContent = $("adjWheelCm").value + " cm";
     renderWindshield();
     renderChipTable(); // the edge margin scales with the real width
   }
-  ["adjTop", "adjBottom", "adjHeight", "adjRound", "adjBow", "adjWidthCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  ["adjTop", "adjBottom", "adjHeight", "adjRound", "adjBow", "adjWidthCm", "adjWheelCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   // Opens a prefilled GitHub issue form with the current shape values, so

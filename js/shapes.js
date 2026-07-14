@@ -18,12 +18,14 @@
   //            the drawing a scale so the 10 cm edge margin and the 29 cm field
   //            of view are real distances, not fractions of the picture.
   //            Vertical cm differ from horizontal cm because of the foreshortening.
+  //   wheelCm = steering wheel diameter. Typical: 38-40 comfort (saloon/estate/
+  //            SUV), 36-37 compact/sporty, 32-35 aftermarket sports wheels.
   var PRESETS = {
-    compact: { top: 0.68, bottom: 1.00, aspect: 0.40, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76 },
-    sedan:   { top: 0.62, bottom: 1.00, aspect: 0.36, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85 },
-    suv:     { top: 0.74, bottom: 1.00, aspect: 0.44, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92 },
-    van:     { top: 0.85, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104 },
-    sport:   { top: 0.55, bottom: 0.96, aspect: 0.28, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72 },
+    compact: { top: 0.68, bottom: 1.00, aspect: 0.40, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76,  wheelCm: 37 },
+    sedan:   { top: 0.62, bottom: 1.00, aspect: 0.36, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85,  wheelCm: 38 },
+    suv:     { top: 0.74, bottom: 1.00, aspect: 0.44, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92,  wheelCm: 39 },
+    van:     { top: 0.85, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104, wheelCm: 40 },
+    sport:   { top: 0.55, bottom: 0.96, aspect: 0.28, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72,  wheelCm: 34 },
   };
   var PRESET_ORDER = ["compact", "sedan", "suv", "van", "sport"];
 
@@ -40,6 +42,7 @@
     round:  { min: 0.00, max: 0.25 },
     bow:    { min: 0.00, max: 0.15 },
     widthCm: { min: 100, max: 200 },
+    wheelCm: { min: 32, max: 42 },
   };
 
   function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
@@ -58,6 +61,8 @@
       widthCm: widthCm,
       // Real height keeps the preset's real proportions when width is adjusted.
       heightCm: base.heightCm * (widthCm / base.widthCm),
+      // Wheel diameter is absolute — it does not scale with the pane.
+      wheelCm: clamp(adj.wheelCm != null ? adj.wheelCm : (base.wheelCm || 38), LIMITS.wheelCm.min, LIMITS.wheelCm.max),
     };
   }
 

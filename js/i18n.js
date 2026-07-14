@@ -24,6 +24,7 @@
     adjRound: { de: "Rundung", en: "Corner rounding" },
     adjBow: { de: "Wölbung", en: "Edge bow" },
     adjWidthCm: { de: "Breite real", en: "Real width" },
+    adjWheelCm: { de: "Lenkrad ⌀", en: "Wheel ⌀" },
     adjReset: { de: "zurücksetzen", en: "reset" },
     proposeShape: { de: "Als Auto-Modell vorschlagen ↗", en: "Propose as car model ↗" },
     wheel: { de: "Lenkrad", en: "Steering wheel" },

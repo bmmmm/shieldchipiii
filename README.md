@@ -15,10 +15,12 @@ sharing between devices works via URL token, JSON export — or the terminal.
 ## Features
 
 - **Windshield diagram** — view from the inside (top edge shorter, trapezoid
-  distortion), mirror top center, dashboard + steering wheel for orientation.
-  5 shape presets (compact, sedan, SUV, van/bus, sports) plus free shape
-  tweaking (top edge, bottom edge, height, corner rounding, edge bow).
-  Left/right-hand drive.
+  distortion), mirror top center, and a schematic cockpit for orientation:
+  the steering wheel is drawn to its real diameter (38–40 cm comfort, 36–37
+  compact/sporty, 32–35 aftermarket sports — adjustable), foreshortened into
+  an ellipse like the glass. 5 shape presets (compact, sedan, SUV, van/bus,
+  sports) plus free shape tweaking (top edge, bottom edge, height, corner
+  rounding, edge bow, real width, wheel ⌀). Left/right-hand drive.
 - **Chips & cracks** — click the glass to add an entry, click a marker for its
   popup, drag to move. Per entry: size (`< 10-cent` / `< 50-cent` / `< 2-euro`
   coin, crack ~2 cm / ~5 cm / > 5 cm), driver's field of view (suggested from
