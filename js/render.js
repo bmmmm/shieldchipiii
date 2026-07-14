@@ -14,7 +14,7 @@
   var M = 20;          // outer margin in viewBox units
   var BOTTOM_W = 960;  // glass bottom edge width in viewBox units
   var VB_W = BOTTOM_W + 2 * M;
-  var DASH_H = 95;     // dashboard + wheel strip below the glass
+  var DASH_H = 175;    // schematic cockpit strip below the glass
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -78,13 +78,28 @@
         '<text class="marker-label" x="18" y="-12">' + (i + 1) + "</text></g>");
     });
 
-    // dashboard + steering wheel
-    var dashY = h + 26;
+    // ---- schematic cockpit below the glass (orientation aid) ----
     var wx = shapes.wheelX(car.wheel) * BOTTOM_W;
-    parts.push('<line class="dash" x1="-8" y1="' + dashY + '" x2="' + (BOTTOM_W + 8) + '" y2="' + dashY + '"/>');
-    parts.push('<line class="dash thin" x1="30" y1="' + (dashY + 10) + '" x2="' + (BOTTOM_W - 30) + '" y2="' + (dashY + 10) + '"/>');
-    parts.push('<g class="wheel" transform="translate(' + wx + "," + (dashY + 42) + ')">' +
-      '<circle r="30"/><line x1="-30" y1="0" x2="30" y2="0"/><line x1="0" y1="0" x2="0" y2="30"/></g>');
+    var cowlY = h + 18;
+    // dashboard cowl: a gentle curve across the full width
+    parts.push('<path class="dash" d="M-10,' + (cowlY + 10) + " Q" + (BOTTOM_W / 2) + "," + (cowlY - 12) + " " + (BOTTOM_W + 10) + "," + (cowlY + 10) + '"/>');
+    // centre console hint down the middle
+    parts.push('<line class="cockpit" x1="' + (BOTTOM_W / 2) + '" y1="' + (cowlY + 16) + '" x2="' + (BOTTOM_W / 2) + '" y2="' + (cowlY + DASH_H - 40) + '"/>');
+    // instrument binnacle + two round gauges behind the wheel (faint)
+    var gaugeY = cowlY + 36;
+    parts.push('<rect class="cockpit" x="' + (wx - 98) + '" y="' + (cowlY + 6) + '" width="196" height="70" rx="22"/>');
+    parts.push('<circle class="cockpit" cx="' + (wx - 44) + '" cy="' + gaugeY + '" r="23"/>');
+    parts.push('<circle class="cockpit" cx="' + (wx + 44) + '" cy="' + gaugeY + '" r="23"/>');
+    // steering wheel in front: rim, hub, 3 spokes (3/9/6 o'clock)
+    var wy = cowlY + 82;
+    var R = 56;
+    parts.push('<g class="wheel" transform="translate(' + wx + "," + wy + ')">' +
+      '<circle class="rim" r="' + R + '"/>' +
+      '<circle class="hub" r="14"/>' +
+      '<line x1="' + (-R) + '" y1="0" x2="-14" y2="0"/>' +
+      '<line x1="14" y1="0" x2="' + R + '" y2="0"/>' +
+      '<line x1="0" y1="14" x2="0" y2="' + R + '"/>' +
+      "</g>");
 
     parts.push("</g>");
     svg.setAttribute("viewBox", viewBox(car));
