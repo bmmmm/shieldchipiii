@@ -76,6 +76,7 @@
     $("adjTop").value = Math.round(p.top * 100);
     $("adjHeight").value = Math.round(p.aspect * 100);
     $("adjRound").value = Math.round(p.round * 100);
+    $("adjBow").value = Math.round(p.bow * 100);
     $("wheelLeft").classList.toggle("active", c.wheel !== "right");
     $("wheelRight").classList.toggle("active", c.wheel === "right");
   }
@@ -301,12 +302,12 @@
   });
 
   function onAdjust() {
-    car().adjust = { top: $("adjTop").value / 100, aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100 };
+    car().adjust = { top: $("adjTop").value / 100, aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100, bow: $("adjBow").value / 100 };
     touchCar();
     persist();
     renderWindshield();
   }
-  ["adjTop", "adjHeight", "adjRound"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  ["adjTop", "adjHeight", "adjRound", "adjBow"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); closePopup(); rerenderAll(); });

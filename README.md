@@ -16,8 +16,9 @@ sharing between devices works via URL token, JSON export — or the terminal.
 
 - **Windshield diagram** — view from the inside (top edge shorter, trapezoid
   distortion), mirror top center, dashboard + steering wheel for orientation.
-  5 shape presets (compact, sedan, SUV, van/bus, sports) plus free trapezoid
-  tweaking (top edge, height, corner rounding). Left/right-hand drive.
+  5 shape presets (compact, sedan, SUV, van/bus, sports) plus free shape
+  tweaking (top edge, height, corner rounding, edge bow). Left/right-hand
+  drive.
 - **Chips & cracks** — click the glass to add an entry, drag markers to move.
   Per entry: size (`< 10-cent` / `< 50-cent` / `< 2-euro` coin, crack
   ~2 cm / ~5 cm / > 5 cm), status (new/repaired), found date, repaired
