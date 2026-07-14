@@ -1,4 +1,4 @@
-/* shieldchipii — windshield shape presets + geometry.
+/* shieldchipiii — windshield shape presets + geometry.
  * UMD-ish: attaches to window.SC in the browser, exports via module.exports in Node (CLI). */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();

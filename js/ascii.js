@@ -1,4 +1,4 @@
-/* shieldchipii — ASCII renderer for the windshield, shared by browser ("copy as
+/* shieldchipiii — ASCII renderer for the windshield, shared by browser ("copy as
  * ASCII") and the terminal CLI. UMD-ish like shapes.js. */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {

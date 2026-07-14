@@ -1,7 +1,7 @@
-/* shieldchipii — state, localStorage persistence, merge. */
+/* shieldchipiii — state, localStorage persistence, merge. */
 (function () {
   "use strict";
-  var KEY = "shieldchipii.v1";
+  var KEY = "shieldchipiii.v1";
 
   function now() { return new Date().toISOString(); }
   function uid(prefix) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* shieldchipii CLI — view and edit shieldchipii data in the terminal.
+/* shieldchipiii CLI — view and edit shieldchipiii data in the terminal.
  * Zero dependencies; shares shapes.js + ascii.js with the web app.
  * Wire format is identical to the browser (#i: = gzip+base64url, #j: = base64url). */
 "use strict";
@@ -50,7 +50,7 @@ function loadState(src) {
     state = decodeToken(token);
   }
   if (!state || state.v !== 1 || !Array.isArray(state.cars) || !state.cars.length) {
-    throw new Error("not a shieldchipii payload");
+    throw new Error("not a shieldchipiii payload");
   }
   return state;
 }
@@ -128,17 +128,17 @@ function emit(state, flags) {
   if (!base) console.log("(open as <app-url>#" + token.slice(0, 12) + "…, or pass --base <app-url>)");
 }
 
-const USAGE = `shieldchipii — windshield stone chip logbook (terminal client)
+const USAGE = `shieldchipiii — windshield stone chip logbook (terminal client)
 
 Usage:
-  shieldchipii.js show <src> [--car <name|nr>] [--width N]
-  shieldchipii.js list <src> [--car <name|nr>]
-  shieldchipii.js add <src> --x <0..1> --y <0..1> [--car <name|nr>]
+  shieldchipiii.js show <src> [--car <name|nr>] [--width N]
+  shieldchipiii.js list <src> [--car <name|nr>]
+  shieldchipiii.js add <src> --x <0..1> --y <0..1> [--car <name|nr>]
                   [--size ${SIZES.join("|")}] [--status new|repaired]
                   [--fov] [--found YYYY-MM-DD] [--note "..."]
                   [--out file.json] [--base <app-url>]
-  shieldchipii.js decode <src>                     print JSON to stdout
-  shieldchipii.js encode <file.json> [--base url]  print share token/URL
+  shieldchipiii.js decode <src>                     print JSON to stdout
+  shieldchipiii.js encode <file.json> [--base url]  print share token/URL
 
 <src> is a JSON export file, a full share URL, or a bare i:/j: token.
 x/y are fractions: x = 0 (left edge) .. 1 (right edge, at the chip's height),
@@ -206,7 +206,7 @@ function main() {
       emit(state, flags);
       break;
     default:
-      die("unknown command '" + cmd + "' — run 'shieldchipii.js help'");
+      die("unknown command '" + cmd + "' — run 'shieldchipiii.js help'");
   }
 }
 

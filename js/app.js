@@ -1,4 +1,4 @@
-/* shieldchipii — UI wiring. */
+/* shieldchipiii — UI wiring. */
 (function () {
   "use strict";
   var store = window.SC.store, shapes = window.SC.shapes, render = window.SC.render;
@@ -309,7 +309,7 @@
     var blob = new Blob([JSON.stringify({ v: 1, cars: state.cars }, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "shieldchipii-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.download = "shieldchipiii-" + new Date().toISOString().slice(0, 10) + ".json";
     a.click();
     URL.revokeObjectURL(a.href);
   });

@@ -1,4 +1,4 @@
-# shieldchipii 🚗🪨
+# shieldchipiii 🚗🪨
 
 > Stone chip logbook for your windshield — **no server, no tracking, all local**.
 >
@@ -34,11 +34,11 @@ Open `index.html` in a browser. That's it — no build, no framework, no npm.
 ## Terminal
 
 ```
-node cli/shieldchipii.js show  '<share link>'      ASCII diagram + entry table
-node cli/shieldchipii.js list  export.json         entry table only
-node cli/shieldchipii.js add   export.json --x 0.3 --y 0.6 --size c50 --fov
-node cli/shieldchipii.js decode '<share link>'     JSON to stdout
-node cli/shieldchipii.js encode export.json --base https://example.com/
+node cli/shieldchipiii.js show  '<share link>'      ASCII diagram + entry table
+node cli/shieldchipiii.js list  export.json         entry table only
+node cli/shieldchipiii.js add   export.json --x 0.3 --y 0.6 --size c50 --fov
+node cli/shieldchipiii.js decode '<share link>'     JSON to stdout
+node cli/shieldchipiii.js encode export.json --base https://example.com/
 ```
 
 `<src>` is interchangeable: a JSON export file, a full share URL, or a bare

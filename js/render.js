@@ -1,4 +1,4 @@
-/* shieldchipii — SVG renderer: rounded trapezoid (view from inside, top edge
+/* shieldchipiii — SVG renderer: rounded trapezoid (view from inside, top edge
  * shorter), mirror top center, dashboard + steering wheel, chip markers. */
 (function () {
   "use strict";

@@ -1,4 +1,4 @@
-/* shieldchipii — share tokens: #i:<base64url(gzip(json))>, fallback #j:<base64url(json)>.
+/* shieldchipiii — share tokens: #i:<base64url(gzip(json))>, fallback #j:<base64url(json)>.
  * Same wire format as the CLI (node:zlib gzip is interoperable with CompressionStream). */
 (function () {
   "use strict";
@@ -51,7 +51,7 @@
     }
     if (bytes.length > MAX_JSON) throw new Error("payload too large");
     var state = window.SC.store.sanitize(JSON.parse(new TextDecoder().decode(bytes)));
-    if (!state) throw new Error("not a shieldchipii payload");
+    if (!state) throw new Error("not a shieldchipiii payload");
     return state;
   }
 
