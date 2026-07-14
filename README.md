@@ -29,6 +29,10 @@ sharing between devices works via URL token, JSON export — or the terminal.
   import JSON, copy the diagram as ASCII art. Importing offers merge
   (newest edit wins per entry) or replace.
 - **Terminal client** — the same data, rendered as ASCII in your shell.
+- **Community car models** — tweaked the shape to match your car? Click
+  *Propose as car model* (under shape tweaking) to open a prefilled
+  [issue form](https://github.com/bmmmm/shieldchipiii/issues/new?template=car-model.yml).
+  Accepted proposals become named presets.
 
 ## Quickstart
 

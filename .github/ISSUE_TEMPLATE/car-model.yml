@@ -1,0 +1,67 @@
+name: Car model proposal
+description: Propose windshield shape values for a specific car model
+title: "[model] "
+labels: ["car-model"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing! Easiest way to fill this out: open the
+        [app](https://bmmmm.github.io/shieldchipiii/), tweak the shape sliders
+        until the diagram matches your windshield, then click
+        **Propose as car model** — it prefills all values here.
+  - type: input
+    id: car
+    attributes:
+      label: Car model
+      description: Make, model, generation and build years
+      placeholder: "VW Golf 7 (2012-2019)"
+    validations:
+      required: true
+  - type: input
+    id: top
+    attributes:
+      label: top
+      description: Top edge width / bottom edge width (0.35-0.98)
+      placeholder: "0.62"
+    validations:
+      required: true
+  - type: input
+    id: aspect
+    attributes:
+      label: aspect
+      description: Glass height / bottom edge width (0.20-0.65)
+      placeholder: "0.36"
+    validations:
+      required: true
+  - type: input
+    id: round
+    attributes:
+      label: round
+      description: Corner radius / glass height (0.00-0.25)
+      placeholder: "0.12"
+    validations:
+      required: true
+  - type: input
+    id: bow
+    attributes:
+      label: bow
+      description: Edge arch / glass height (0.00-0.15, 0 = straight edges)
+      placeholder: "0.07"
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: How did you derive the values?
+      options:
+        - Tweaked the sliders in the app to match my car
+        - Measured the real windshield
+        - Eyeballed from photos
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else — trim variants, panorama windshield, sensor housing, ...

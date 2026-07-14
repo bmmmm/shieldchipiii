@@ -21,6 +21,7 @@
     adjRound: { de: "Rundung", en: "Corner rounding" },
     adjBow: { de: "Wölbung", en: "Edge bow" },
     adjReset: { de: "zurücksetzen", en: "reset" },
+    proposeShape: { de: "Als Auto-Modell vorschlagen ↗", en: "Propose as car model ↗" },
     wheel: { de: "Lenkrad", en: "Steering wheel" },
     wheelLeft: { de: "links", en: "left" },
     wheelRight: { de: "rechts", en: "right" },

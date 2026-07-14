@@ -85,6 +85,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 #shapeButtons { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; }
 .sliders label { color: var(--muted); font-size: 12px; }
+.sliders .pair { display: inline-flex; align-items: center; gap: 8px; }
 
 /* windshield SVG */
 .glass-wrap { text-align: center; }

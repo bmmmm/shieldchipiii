@@ -310,6 +310,19 @@
   ["adjTop", "adjHeight", "adjRound", "adjBow"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
+  // Opens a prefilled GitHub issue form with the current shape values, so
+  // community car models can be collected without any server of our own.
+  $("proposeShape").addEventListener("click", function () {
+    var c = car();
+    var p = shapes.paramsFor(c);
+    var url = "https://github.com/bmmmm/shieldchipiii/issues/new?template=car-model.yml" +
+      "&title=" + encodeURIComponent("[model] " + (c.name || "")) +
+      "&car=" + encodeURIComponent(c.name || "") +
+      "&top=" + p.top.toFixed(2) + "&aspect=" + p.aspect.toFixed(2) +
+      "&round=" + p.round.toFixed(2) + "&bow=" + p.bow.toFixed(2);
+    window.open(url, "_blank", "noopener");
+  });
+
   $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); closePopup(); rerenderAll(); });
   $("wheelRight").addEventListener("click", function () { car().wheel = "right"; touchCar(); persist(); closePopup(); rerenderAll(); });
 
