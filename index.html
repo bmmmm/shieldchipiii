@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>shieldchipii — windshield stone chip logbook</title>
+  <meta name="description" content="Document stone chips on your car windshield: position, size, repair status, insurance. No server, all local. / Steinschläge auf der Windschutzscheibe dokumentieren — lokal im Browser.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <header>
+    <h1>shieldchipii <span class="cursor">▊</span></h1>
+    <p class="tagline" data-i18n="tagline"></p>
+    <button id="langToggle" class="ghost" title="Sprache / language">EN</button>
+  </header>
+
+  <main>
+    <nav id="carTabs" class="tabs"></nav>
+
+    <section class="car-config">
+      <div class="row">
+        <label for="carName" data-i18n="carName"></label>
+        <input id="carName" type="text" data-i18n-ph="carNamePh" maxlength="40">
+        <span class="spacer"></span>
+        <span data-i18n="wheel"></span>
+        <span class="seg">
+          <button id="wheelLeft" data-i18n="wheelLeft"></button><button id="wheelRight" data-i18n="wheelRight"></button>
+        </span>
+      </div>
+      <div class="row">
+        <span data-i18n="shape"></span>
+        <span id="shapeButtons"></span>
+      </div>
+      <details class="adjust">
+        <summary data-i18n="adjust"></summary>
+        <div class="row sliders">
+          <label data-i18n="adjTop"></label><input id="adjTop" type="range" min="35" max="98">
+          <label data-i18n="adjHeight"></label><input id="adjHeight" type="range" min="20" max="65">
+          <label data-i18n="adjRound"></label><input id="adjRound" type="range" min="0" max="25">
+          <button id="adjReset" class="ghost" data-i18n="adjReset"></button>
+        </div>
+      </details>
+    </section>
+
+    <section class="glass-wrap">
+      <svg id="windshield" role="img" aria-label="windshield diagram"></svg>
+      <p class="legend">
+        <span class="lg new">●</span> <span data-i18n="legendNew"></span> ·
+        <span class="lg repaired">◐</span> <span data-i18n="legendRepaired"></span> ·
+        <span class="lg crack">✛</span> <span data-i18n="legendCrack"></span> ·
+        <span class="lg fov">▒</span> <span data-i18n="legendFov"></span>
+      </p>
+      <p class="muted hint" data-i18n="hintClick"></p>
+    </section>
+
+    <section>
+      <h2 data-i18n="chips"></h2>
+      <div id="chipTable"></div>
+    </section>
+
+    <section id="detail" class="detail" hidden>
+      <div class="detail-head">
+        <strong id="detailTitle"></strong>
+        <button id="closeDetail" class="ghost" data-i18n="close"></button>
+      </div>
+      <div class="grid">
+        <label data-i18n="size"></label><select id="chipSize"></select>
+        <label data-i18n="status"></label><select id="chipStatus"></select>
+        <label data-i18n="found"></label><input id="chipFound" type="date">
+        <label data-i18n="fov"></label><input id="chipFov" type="checkbox">
+        <label data-i18n="insurance"></label><input id="chipInsurance" type="checkbox">
+      </div>
+      <div class="grid" id="insuranceDateField" hidden>
+        <label data-i18n="insuranceAt"></label><input id="chipInsuranceAt" type="date">
+      </div>
+      <div class="grid" id="repairFields" hidden>
+        <label data-i18n="repairedAt"></label><input id="chipRepairedAt" type="date">
+        <label data-i18n="repairedBy"></label><input id="chipRepairedBy" type="text" data-i18n-ph="repairedByPh" maxlength="60">
+      </div>
+      <div class="grid">
+        <label data-i18n="note"></label><input id="chipNote" type="text" maxlength="200">
+      </div>
+      <button id="deleteChip" class="danger" data-i18n="deleteChip"></button>
+    </section>
+
+    <section class="share">
+      <h2 data-i18n="share"></h2>
+      <div class="row">
+        <button id="copyLink" data-i18n="copyLink"></button>
+        <button id="copyAscii" data-i18n="copyAscii"></button>
+        <button id="exportJson" data-i18n="exportJson"></button>
+        <label class="filebtn"><span data-i18n="importJson"></span><input id="importJson" type="file" accept=".json,application/json"></label>
+      </div>
+      <p class="muted" data-i18n="shareNote"></p>
+      <p class="muted mono" data-i18n="terminalNote"></p>
+    </section>
+
+    <section class="rule">
+      <h2 data-i18n="ruleTitle"></h2>
+      <p data-i18n="ruleBody"></p>
+    </section>
+
+    <section class="danger-zone">
+      <button id="deleteCar" class="ghost danger" data-i18n="deleteCar"></button>
+    </section>
+  </main>
+
+  <div id="importOverlay" class="overlay" hidden>
+    <div class="dialog">
+      <h2 data-i18n="importTitle"></h2>
+      <p id="importSummary"></p>
+      <div class="row">
+        <button id="importMerge" data-i18n="importMerge"></button>
+        <button id="importReplace" class="danger" data-i18n="importReplace"></button>
+        <button id="importCancel" class="ghost" data-i18n="importCancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span data-i18n="footerLocal"></span> ·
+    <a href="https://ko-fi.com/bmabma" rel="noopener">ko-fi ☕</a> ·
+    <span>GPL-3.0-or-later</span>
+  </footer>
+
+  <script src="js/shapes.js"></script>
+  <script src="js/ascii.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
