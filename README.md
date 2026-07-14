@@ -26,6 +26,14 @@ sharing between devices works via URL token, JSON export — or the terminal.
   repaired (where/when), irreparable, reported to insurance, notes. The current
   status is the latest status event, and drives an actionable **repair
   recommendation**.
+- **Repairable or not, by the shop's rules** — the diagram marks the two zones
+  where a repair is normally refused: the **29 cm field of view** (a DIN A4
+  sheet on its side, above the wheel) and the **10 cm edge margin**, where the
+  glass is under stress. Both are real centimetres: each preset carries the
+  pane's real size (`widthCm`/`heightCm`, adjustable), so 10 cm covers more of
+  a small pane than of a large one, and the margin is drawn thinner top/bottom
+  because the view from inside is foreshortened. The popup shows each chip's
+  edge distance in cm.
 - **Multiple vehicles** — tabs, each with its own shape and entries. Replacing
   the whole windshield is a vehicle-level action (*Windshield replaced*), not a
   per-chip status — it clears the vehicle's markers for a fresh pane.
@@ -78,9 +86,17 @@ share it with your own devices.
 
 ## Repair rule of thumb (DE)
 
-Kleiner als eine 2-Euro-Münze und außerhalb des Fahrer-Sichtfelds → meist
-reparierbar statt Scheibentausch; die Teilkasko übernimmt die Reparatur oft
-ohne Selbstbeteiligung. Im Sichtfeld oder größer → Werkstatt fragen.
+Eine Reparatur statt Scheibentausch geht in der Regel nur, wenn **alle drei**
+Punkte stimmen:
+
+- Der Schaden ist **kleiner als eine 2-Euro-Münze**.
+- Er liegt **außerhalb des Sichtfelds** — ein 29 cm breiter Bereich (DIN A4
+  quer) über dem Lenkrad.
+- Er ist **mehr als 10 cm vom Scheibenrand** entfernt.
+
+Trifft einer nicht zu, muss die Scheibe meist getauscht werden. Die Teilkasko
+übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — die
+Werkstatt entscheidet.
 
 ## Support
 

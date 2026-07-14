@@ -51,20 +51,25 @@
 
   function insuranceReported(chip) { return !!lastEventOfType(chip, "insurance_reported"); }
 
-  // Repair recommendation from current status + size + field-of-view.
+  // Repair recommendation from current status + geometry + size, following the
+  // criteria glass shops use (Carglass): outside the driver's field of view,
+  // smaller than a 2-euro coin, and more than 10 cm from the edge.
+  // `opts.inMargin` is the caller's edge check (shapes.inMargin) — geometry
+  // lives in shapes.js, so it's passed in rather than imported here.
   // Returns { key, level } — key is an i18n key, level ∈ ok|warn|danger drives color.
-  function recommend(chip) {
+  function recommend(chip, opts) {
     var status = currentStatus(chip);
     if (status === "repaired") return { key: "recWatchRepair", level: "ok" };
     if (status === "irreparable") return { key: "recIrreparable", level: "danger" };
     if (status === "repair_planned") return { key: "recPlanned", level: "warn" };
 
-    // new / observing: decide reparability from size + field of view.
-    var size = chip.size;
+    // new / observing: decide reparability from position + size.
+    if (opts && opts.inMargin) return { key: "recReplaceEdge", level: "danger" };
     if (chip.fov) return { key: "recReplaceFov", level: "danger" };
+    var size = chip.size;
     if (size === "crackL") return { key: "recReplaceBig", level: "danger" };
     if (size === "crackM" || size === "e2") return { key: "recBorderline", level: "warn" };
-    return { key: "recRepairable", level: "ok" }; // c10, c50, crackS, outside FOV
+    return { key: "recRepairable", level: "ok" }; // small, outside FOV, off the rim
   }
 
   function uid(prefix) {

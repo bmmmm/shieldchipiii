@@ -54,6 +54,7 @@
       ['<span class="lg m-repaired">●</span>', "statusRepaired"],
       ['<span class="lg m-irreparable">●</span>', "statusIrreparable"],
       ['<span class="lg fov">▒</span>', "legendFov"],
+      ['<span class="lg edge">▒</span>', "legendMargin"],
     ];
     $("legend").innerHTML = items.map(function (it) { return it[0] + " " + esc(t(it[1])); }).join(" · ");
   }
@@ -78,6 +79,8 @@
     $("adjHeight").value = Math.round(p.aspect * 100);
     $("adjRound").value = Math.round(p.round * 100);
     $("adjBow").value = Math.round(p.bow * 100);
+    $("adjWidthCm").value = Math.round(p.widthCm);
+    $("adjWidthCmOut").textContent = Math.round(p.widthCm) + " cm";
     $("wheelLeft").classList.toggle("active", c.wheel !== "right");
     $("wheelRight").classList.toggle("active", c.wheel === "right");
   }
@@ -88,11 +91,13 @@
       $("chipTable").innerHTML = '<p class="muted">' + esc(t("noChips")) + "</p>";
       return;
     }
+    var p = shapes.paramsFor(car());
     var rows = chips.map(function (k, i) {
       var status = logic.currentStatus(k);
-      var rec = logic.recommend(k);
+      var edge = shapes.inMargin(p, k);
+      var rec = logic.recommend(k, { inMargin: edge });
       var found = (logic.timeline(k)[0] || {}).date || "";
-      var badges = (k.fov ? "⌖ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
+      var badges = (k.fov ? "⌖ " : "") + (edge ? "▣ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
       return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '">' +
         "<td>" + (i + 1) + "</td>" +
         '<td class="sym">' + ascii.markerChar(k) + "</td>" +
@@ -120,7 +125,10 @@
   function buildPopup(chip) {
     var idx = car().chips.indexOf(chip) + 1;
     var status = logic.currentStatus(chip);
-    var rec = logic.recommend(chip);
+    var p = shapes.paramsFor(car());
+    var distCm = shapes.edgeDistanceCm(p, chip);
+    var edge = distCm < shapes.MARGIN_CM;
+    var rec = logic.recommend(chip, { inMargin: edge });
     var tl = logic.timeline(chip);
 
     var sizeOpts = logic.SIZES.map(function (s) {
@@ -150,6 +158,7 @@
       '<div class="popup-fields">' +
         '<label class="pf">' + esc(t("size")) + ' <select data-act="size">' + sizeOpts + "</select></label>" +
         '<label class="pf pf-check"><input type="checkbox" data-act="fov"' + (chip.fov ? " checked" : "") + "> " + esc(t("fov")) + "</label>" +
+        '<span class="pf edge-dist' + (edge ? " is-edge" : "") + '">' + esc(t("edgeDistance")) + " ~" + Math.round(distCm) + " cm</span>" +
       "</div>" +
       '<div class="timeline"><div class="tl-head">' + esc(t("timeline")) + "</div><ul>" + tlRows + "</ul></div>" +
       '<form class="add-event" data-act="addEvent">' +
@@ -304,12 +313,15 @@
     car().adjust = {
       top: $("adjTop").value / 100, bottom: $("adjBottom").value / 100,
       aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100, bow: $("adjBow").value / 100,
+      widthCm: +$("adjWidthCm").value,
     };
     touchCar();
     persist();
+    $("adjWidthCmOut").textContent = $("adjWidthCm").value + " cm";
     renderWindshield();
+    renderChipTable(); // the edge margin scales with the real width
   }
-  ["adjTop", "adjBottom", "adjHeight", "adjRound", "adjBow"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  ["adjTop", "adjBottom", "adjHeight", "adjRound", "adjBow", "adjWidthCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   // Opens a prefilled GitHub issue form with the current shape values, so

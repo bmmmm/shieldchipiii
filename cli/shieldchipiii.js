@@ -29,6 +29,7 @@ const REC_LABEL = {
   recRepairable: "repairable — insurance often covers it, do it soon",
   recBorderline: "borderline — have a shop check repair vs. replace",
   recReplaceFov: "in the driver's view — likely needs a glass replacement",
+  recReplaceEdge: "< 10 cm from the edge — a repair won't hold, replace the pane",
   recReplaceBig: "too large (> 5 cm) — likely needs a glass replacement",
   recPlanned: "repair planned — keep the appointment, avoid temp shocks",
   recWatchRepair: "repaired — watch that it holds",
@@ -81,9 +82,10 @@ function loadState(src) {
 
 // ---------- output ----------
 
-function chipLine(k, i) {
+function chipLine(k, i, params) {
   const status = logic.currentStatus(k);
   const found = (logic.timeline(k)[0] || {}).date || "";
+  const edgeCm = params ? Math.round(shapes.edgeDistanceCm(params, k)) : null;
   const cols = [
     String(i + 1).padStart(2),
     ascii.markerChar(k),
@@ -91,6 +93,7 @@ function chipLine(k, i) {
     (STATUS_LABEL[status] || status).padEnd(15),
     found.padEnd(10),
     k.fov ? "FOV" : "   ",
+    edgeCm != null ? (edgeCm + "cm").padStart(5) : "     ",
     logic.insuranceReported(k) ? "ins" : "   ",
   ];
   return "  " + cols.join(" ").replace(/\s+$/, "");
@@ -112,10 +115,11 @@ function printCar(car, opts) {
   console.log(ascii.renderAscii(car, { width: opts.width }).replace(/^/gm, "   "));
   console.log("");
   if (!car.chips.length) { console.log("  (no entries)"); return; }
-  console.log("   # sym size            status          found      fov ins");
+  const params = shapes.paramsFor(car);
+  console.log("   # sym size            status          found      fov  edge ins");
   car.chips.forEach((k, i) => {
-    console.log(chipLine(k, i));
-    const rec = logic.recommend(k);
+    console.log(chipLine(k, i, params));
+    const rec = logic.recommend(k, { inMargin: shapes.inMargin(params, k) });
     console.log("     -> " + (REC_LABEL[rec.key] || rec.key));
   });
 }
@@ -181,7 +185,9 @@ Usage:
 <src> is a JSON export file, a full share URL, or a bare i:/j: token.
 x/y are fractions: x = 0 (left edge) .. 1 (right edge at the chip's height),
 y = 0 (top) .. 1 (bottom). Example: --x 0.3 --y 0.6
-Marker symbols: o=new ?=observing @=planned *=repaired X=irreparable ==replaced`;
+Marker symbols: o=open ?=observing @=planned *=repaired X=irreparable
+The edge column is the distance to the nearest edge; under 10 cm the pane
+usually has to be replaced instead of repaired.`;
 
 // ---------- main ----------
 
@@ -198,7 +204,7 @@ function main() {
       const cars = flags.car ? [findCar(state, flags.car)] : state.cars;
       const width = Math.max(30, Math.min(120, parseInt(flags.width, 10) || 58));
       cars.forEach((c) => printCar(c, { width }));
-      console.log("\n  o=new ?=observing @=planned *=repaired X=irreparable ==replaced · [=]=mirror (O)=wheel");
+      console.log("\n  o=open ?=observing @=planned *=repaired X=irreparable · [=]=mirror (O)=wheel");
       break;
     }
     case "list": {
@@ -206,8 +212,9 @@ function main() {
       cars.forEach((c) => {
         console.log("== " + (c.name || "(unnamed vehicle)") + " ==");
         if (!c.chips.length) console.log("  (no entries)");
+        const params = shapes.paramsFor(c);
         c.chips.forEach((k, i) => {
-          console.log(chipLine(k, i));
+          console.log(chipLine(k, i, params));
           timelineLines(k).forEach((l) => console.log(l));
         });
       });

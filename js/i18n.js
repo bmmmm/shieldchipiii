@@ -23,12 +23,14 @@
     adjHeight: { de: "Höhe", en: "Height" },
     adjRound: { de: "Rundung", en: "Corner rounding" },
     adjBow: { de: "Wölbung", en: "Edge bow" },
+    adjWidthCm: { de: "Breite real", en: "Real width" },
     adjReset: { de: "zurücksetzen", en: "reset" },
     proposeShape: { de: "Als Auto-Modell vorschlagen ↗", en: "Propose as car model ↗" },
     wheel: { de: "Lenkrad", en: "Steering wheel" },
     wheelLeft: { de: "links", en: "left" },
     wheelRight: { de: "rechts", en: "right" },
-    legendFov: { de: "Sichtfeld Fahrer:in", en: "driver's field of view" },
+    legendFov: { de: "Sichtfeld Fahrer:in (29 cm)", en: "driver's field of view (29 cm)" },
+    legendMargin: { de: "Randzone (10 cm)", en: "edge zone (10 cm)" },
     chips: { de: "Einträge", en: "Entries" },
     noChips: { de: "Noch keine Einträge — klick auf die Scheibe.", en: "No entries yet — click the glass." },
 
@@ -65,6 +67,7 @@
     recRepairable: { de: "Wahrscheinlich reparierbar. Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung — zeitnah machen lassen, bevor der Chip reißt.", en: "Likely repairable. Comprehensive insurance often covers the repair with no deductible — get it done soon, before it cracks." },
     recBorderline: { de: "Grenzfall. Von der Werkstatt prüfen lassen, ob eine Reparatur reicht oder die Scheibe getauscht werden muss.", en: "Borderline. Have a shop check whether a repair is enough or the glass needs replacing." },
     recReplaceFov: { de: "Im direkten Sichtfeld der Fahrer:in — hier ist meist ein Scheibentausch nötig (Reparaturspur stört die Sicht). Werkstatt fragen.", en: "In the driver's direct field of view — usually needs a glass replacement (a repair mark would blur the view). Ask a shop." },
+    recReplaceEdge: { de: "Weniger als 10 cm vom Scheibenrand — dort sitzt die Spannung im Glas, eine Reparatur hält nicht. Die Scheibe muss in der Regel getauscht werden.", en: "Less than 10 cm from the edge — that's where the glass is under stress and a repair won't hold. The pane usually has to be replaced." },
     recReplaceBig: { de: "Zu großer Riss (> 5 cm) — meist nicht mehr reparierbar, Scheibentausch einplanen.", en: "Crack too large (> 5 cm) — usually not repairable, plan a glass replacement." },
     recPlanned: { de: "Reparatur geplant — Termin wahrnehmen, die Stelle bis dahin schonen (starke Temperaturwechsel und Waschanlage meiden).", en: "Repair planned — keep the appointment; until then avoid temperature shocks and car washes." },
     recWatchRepair: { de: "Repariert. Beobachten, ob die Stelle hält — reißt sie weiter, ist ein Scheibentausch fällig.", en: "Repaired. Keep an eye on it — if it keeps cracking, a replacement is due." },
@@ -74,6 +77,7 @@
     // marker popup
     popupPosition: { de: "Position", en: "Position" },
     fov: { de: "Im Sichtfeld Fahrer:in", en: "In driver's field of view" },
+    edgeDistance: { de: "Randabstand", en: "Edge distance" },
     timeline: { de: "Verlauf", en: "Timeline" },
     addEvent: { de: "+ Ereignis", en: "+ event" },
     eventType: { de: "Was", en: "What" },
@@ -105,7 +109,7 @@
     importFileBroken: { de: "Datei konnte nicht gelesen werden — ist es ein shieldchipiii-JSON-Export?", en: "Could not read the file — is it a shieldchipiii JSON export?" },
 
     ruleTitle: { de: "Faustregel Reparatur", en: "Repair rule of thumb" },
-    ruleBody: { de: "Kleiner als eine 2-Euro-Münze und außerhalb des Fahrer-Sichtfelds → meist reparierbar statt Scheibentausch; Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung. Im Sichtfeld oder größer → Werkstatt fragen, Scheibe muss ggf. getauscht werden.", en: "Smaller than a 2-euro coin (~1 inch) and outside the driver's field of view → usually repairable instead of replacing the glass; comprehensive insurance often covers the repair fully. In the field of view or larger → ask a shop, the glass may need replacing." },
+    ruleBody: { de: "Reparatur statt Tausch geht in der Regel nur, wenn alle drei Punkte stimmen: der Schaden ist kleiner als eine 2-Euro-Münze, er liegt außerhalb des Sichtfelds (29 cm breiter Bereich — eine DIN-A4-Seite quer — über dem Lenkrad), und er ist mehr als 10 cm vom Scheibenrand entfernt. Trifft eines nicht zu, muss die Scheibe meist getauscht werden. Die Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — die Werkstatt entscheidet.", en: "A repair instead of a replacement usually needs all three to hold: the damage is smaller than a 2-euro coin (~1 inch), it sits outside the field of view (a 29 cm band — a DIN A4 sheet on its side — above the wheel), and it is more than 10 cm from the edge. If one fails, the pane usually has to be replaced. Comprehensive insurance often covers the repair fully. No guarantee — the shop decides." },
     footerLocal: { de: "kein Server · kein Tracking · alles lokal", en: "no server · no tracking · all local" },
   };
 

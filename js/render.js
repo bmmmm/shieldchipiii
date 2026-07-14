@@ -54,8 +54,20 @@
     // glass
     parts.push('<path class="glass" d="' + outline + '"/>');
 
+    // 10 cm edge margin: the ring between the outline and its inward offset.
+    // The inset is wound the opposite way and filled non-zero, so where the
+    // offset self-intersects in the sharp lower corners the loop still counts
+    // as margin instead of being punched out as a hole (even-odd would).
+    // Clipped to the glass: the sampled outline ignores corner rounding.
+    var inset = shapes.marginInset(p).slice().reverse();
+    var insetPath = inset.map(function (q, i) {
+      return (i === 0 ? "M" : "L") + (q[0] * BOTTOM_W).toFixed(1) + "," + (q[1] * h).toFixed(1);
+    }).join("") + "Z";
+    parts.push('<g clip-path="url(#glassClip)">' +
+      '<path class="margin-band" d="' + outline + insetPath + '"/></g>');
+
     // driver field-of-view band (dashed, clipped to the glass)
-    var band = shapes.fovBand(car.wheel);
+    var band = shapes.fovBand(p, car.wheel);
     parts.push('<g clip-path="url(#glassClip)">' +
       '<rect class="fov-band" x="' + band.from * BOTTOM_W + '" y="-5" width="' +
       (band.to - band.from) * BOTTOM_W + '" height="' + (h + 10) + '" rx="18"/></g>');

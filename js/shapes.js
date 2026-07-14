@@ -6,21 +6,32 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  // All widths are ratios of the bounding-box width; aspect/round/bow of height:
+  // Shape ratios are of the bounding box; the drawing is the (foreshortened)
+  // view from inside, so it is NOT to scale — real sizes come from widthCm.
   //   top    = top edge width / bounding-box width    (< 1: view from inside, top is shorter)
   //   bottom = bottom edge width / bounding-box width (1 = widest; the default)
-  //   aspect = glass height / bounding-box width
+  //   aspect = glass height / bounding-box width      (drawn, foreshortened)
   //   round  = corner radius / glass height
   //   bow    = vertical arch of top/bottom edges / glass height (0 = straight;
   //            glass is tallest at the centreline, like a real windshield)
+  //   widthCm/heightCm = real pane size, measured along the glass. These give
+  //            the drawing a scale so the 10 cm edge margin and the 29 cm field
+  //            of view are real distances, not fractions of the picture.
+  //            Vertical cm differ from horizontal cm because of the foreshortening.
   var PRESETS = {
-    compact: { top: 0.68, bottom: 1.00, aspect: 0.40, round: 0.10, bow: 0.06 },
-    sedan:   { top: 0.62, bottom: 1.00, aspect: 0.36, round: 0.12, bow: 0.07 },
-    suv:     { top: 0.74, bottom: 1.00, aspect: 0.44, round: 0.10, bow: 0.05 },
-    van:     { top: 0.85, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03 },
-    sport:   { top: 0.55, bottom: 0.96, aspect: 0.28, round: 0.16, bow: 0.09 },
+    compact: { top: 0.68, bottom: 1.00, aspect: 0.40, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76 },
+    sedan:   { top: 0.62, bottom: 1.00, aspect: 0.36, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85 },
+    suv:     { top: 0.74, bottom: 1.00, aspect: 0.44, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92 },
+    van:     { top: 0.85, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104 },
+    sport:   { top: 0.55, bottom: 0.96, aspect: 0.28, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72 },
   };
   var PRESET_ORDER = ["compact", "sedan", "suv", "van", "sport"];
+
+  // Glass-shop criteria (Carglass): a chip is only repairable when it sits
+  // more than MARGIN_CM from the edge and outside the FOV_CM wide band over
+  // the wheel. Both are real centimetres — hence widthCm/heightCm above.
+  var MARGIN_CM = 10;
+  var FOV_CM = 29; // DIN A4 long edge
 
   var LIMITS = {
     top:    { min: 0.35, max: 0.98 },
@@ -28,6 +39,7 @@
     aspect: { min: 0.20, max: 0.65 },
     round:  { min: 0.00, max: 0.25 },
     bow:    { min: 0.00, max: 0.15 },
+    widthCm: { min: 100, max: 200 },
   };
 
   function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
@@ -36,12 +48,16 @@
   function paramsFor(car) {
     var base = PRESETS[car && car.shape] || PRESETS.sedan;
     var adj = (car && car.adjust) || {};
+    var widthCm = clamp(adj.widthCm != null ? adj.widthCm : base.widthCm, LIMITS.widthCm.min, LIMITS.widthCm.max);
     return {
       top:    clamp(adj.top    != null ? adj.top    : base.top,    LIMITS.top.min,    LIMITS.top.max),
       bottom: clamp(adj.bottom != null ? adj.bottom : (base.bottom != null ? base.bottom : 1), LIMITS.bottom.min, LIMITS.bottom.max),
       aspect: clamp(adj.aspect != null ? adj.aspect : base.aspect, LIMITS.aspect.min, LIMITS.aspect.max),
       round:  clamp(adj.round  != null ? adj.round  : base.round,  LIMITS.round.min,  LIMITS.round.max),
       bow:    clamp(adj.bow    != null ? adj.bow    : (base.bow || 0), LIMITS.bow.min, LIMITS.bow.max),
+      widthCm: widthCm,
+      // Real height keeps the preset's real proportions when width is adjusted.
+      heightCm: base.heightCm * (widthCm / base.widthCm),
     };
   }
 
@@ -80,6 +96,77 @@
     var t = bow > 0.001 ? (yFrac - bow) / (1 - 2 * bow) : yFrac;
     var left = topInset * (1 - t) + botInset * t;
     return { left: left, right: 1 - left };
+  }
+
+  // The glass outline sampled as [x, y] pairs in bounding-box fractions
+  // (x of width, y of height), walking clockwise tl -> tr -> br -> bl.
+  // Corner rounding is ignored: it only pulls the outline further inward, and
+  // anything that close to a corner is deep inside the edge margin anyway.
+  function outlineSamples(params, perEdge) {
+    var n = perEdge || 24;
+    var bow = params.bow || 0;
+    var topInset = (1 - params.top) / 2;
+    var botInset = (1 - (params.bottom != null ? params.bottom : 1)) / 2;
+    var tl = [topInset, bow], tr = [1 - topInset, bow];
+    var br = [1 - botInset, 1 - bow], bl = [botInset, 1 - bow];
+    var pts = [];
+    function quad(P0, P1, P2) {
+      for (var i = 0; i < n; i++) {
+        var t = i / n, m = 1 - t;
+        pts.push([m * m * P0[0] + 2 * m * t * P1[0] + t * t * P2[0],
+                  m * m * P0[1] + 2 * m * t * P1[1] + t * t * P2[1]]);
+      }
+    }
+    function line(P0, P2) {
+      for (var i = 0; i < n; i++) {
+        var t = i / n;
+        pts.push([P0[0] + (P2[0] - P0[0]) * t, P0[1] + (P2[1] - P0[1]) * t]);
+      }
+    }
+    quad(tl, [0.5, -bow], tr);      // top edge arches up to y = 0
+    line(tr, br);
+    quad(br, [0.5, 1 + bow], bl);   // bottom edge dips down to y = 1
+    line(bl, tl);
+    return pts;
+  }
+
+  // Shortest distance from a chip to the glass edge, in real centimetres.
+  // Distances are measured in cm space (x * widthCm, y * heightCm) so the
+  // drawing's foreshortening doesn't distort them.
+  function edgeDistanceCm(params, chip) {
+    var box = chipToBox(params, chip);
+    var W = params.widthCm, H = params.heightCm;
+    var pts = outlineSamples(params, 24);
+    var min = Infinity;
+    for (var i = 0; i < pts.length; i++) {
+      var dx = (box.x - pts[i][0]) * W;
+      var dy = (box.y - pts[i][1]) * H;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < min) min = d;
+    }
+    return min;
+  }
+
+  // Chips closer than MARGIN_CM to the edge can't be repaired — the glass has
+  // to be replaced (stress concentrates at the rim).
+  function inMargin(params, chip) { return edgeDistanceCm(params, chip) < MARGIN_CM; }
+
+  // The margin band as an inward offset of the outline, in bounding-box
+  // fractions: each sample steps MARGIN_CM along its inward normal, computed
+  // in cm space so the band is 10 cm everywhere on the real pane (which means
+  // it looks thinner top/bottom in the foreshortened drawing — correct).
+  function marginInset(params) {
+    var pts = outlineSamples(params, 24);
+    var W = params.widthCm, H = params.heightCm;
+    var n = pts.length;
+    return pts.map(function (p, i) {
+      var prev = pts[(i - 1 + n) % n], next = pts[(i + 1) % n];
+      var tx = (next[0] - prev[0]) * W, ty = (next[1] - prev[1]) * H;
+      var len = Math.sqrt(tx * tx + ty * ty) || 1;
+      // clockwise outline -> inward normal is the tangent rotated (x,y)->(-y,x)
+      var nx = -ty / len, ny = tx / len;
+      return [p[0] + (nx * MARGIN_CM) / W, p[1] + (ny * MARGIN_CM) / H];
+    });
   }
 
   // Chip coords are stored row-relative: x = fraction of the glass width at the
@@ -163,22 +250,28 @@
     return d + "Z";
   }
 
-  // Driver field-of-view band (fraction of bottom width), around the wheel.
-  function fovBand(wheel) {
-    return wheel === "right" ? { from: 0.58, to: 0.92 } : { from: 0.08, to: 0.42 };
+  // Driver's field of view: the FOV_CM wide band centred on the wheel — the
+  // criterion glass shops use, so it scales with the pane's real width.
+  function fovBand(params, wheel) {
+    var half = (FOV_CM / 2) / params.widthCm;
+    var cx = wheelX(wheel);
+    return { from: cx - half, to: cx + half };
   }
   function wheelX(wheel) { return wheel === "right" ? 0.75 : 0.25; }
 
   // Suggest the FOV flag from a chip position (band check on the box x).
   function suggestFov(params, chip, wheel) {
-    var b = fovBand(wheel);
+    var b = fovBand(params, wheel);
     var bx = chipToBox(params, chip).x;
     return bx >= b.from && bx <= b.to;
   }
 
   return {
     PRESETS: PRESETS, PRESET_ORDER: PRESET_ORDER, LIMITS: LIMITS,
+    MARGIN_CM: MARGIN_CM, FOV_CM: FOV_CM,
     paramsFor: paramsFor, corners: corners, edgesAt: edgesAt,
+    outlineSamples: outlineSamples, edgeDistanceCm: edgeDistanceCm,
+    inMargin: inMargin, marginInset: marginInset,
     chipToBox: chipToBox, boxToChip: boxToChip, outlinePath: outlinePath,
     fovBand: fovBand, wheelX: wheelX, suggestFov: suggestFov, clamp: clamp,
   };
