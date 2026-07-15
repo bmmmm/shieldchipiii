@@ -43,15 +43,35 @@ function die(msg) {
   process.exit(1);
 }
 
+// Dates are validated here rather than left to the model, which would quietly
+// blank an unparseable one — from the outside that looks like a lost entry.
+function askDate(flag, value, fallback) {
+  if (typeof value !== "string") return fallback;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) die("--" + flag + " must be a date as YYYY-MM-DD, got '" + value + "'");
+  return value;
+}
+
 // ---------- token <-> state ----------
+
+// Same caps as the browser (js/share.js): a share link is untrusted input here
+// too, and a small gzip token can otherwise inflate to hundreds of megabytes.
+const MAX_TOKEN = 512 * 1024, MAX_JSON = 2 * 1024 * 1024;
 
 function decodeToken(token) {
   token = token.replace(/^#/, "");
   const kind = token.slice(0, 2);
   const body = token.slice(2);
   if ((kind !== "i:" && kind !== "j:") || !body) throw new Error("not a share token");
+  if (body.length > MAX_TOKEN) throw new Error("share token too large");
   let bytes = Buffer.from(body, "base64url");
-  if (kind === "i:") bytes = zlib.gunzipSync(bytes);
+  if (kind === "i:") {
+    try {
+      bytes = zlib.gunzipSync(bytes, { maxOutputLength: MAX_JSON });
+    } catch (e) {
+      throw new Error("could not unpack the share link (corrupted, or larger than " + MAX_JSON / 1024 + " KB of data)");
+    }
+  }
+  if (bytes.length > MAX_JSON) throw new Error("share payload too large");
   return JSON.parse(bytes.toString("utf8"));
 }
 
@@ -198,11 +218,18 @@ unlikely — a glass service has to decide.`;
 
 // ---------- main ----------
 
+const COMMANDS = ["show", "list", "add", "event", "decode", "encode"];
+
 function main() {
   const { flags, pos } = parseArgs(process.argv.slice(2));
   const cmd = pos[0];
 
   if (!cmd || cmd === "help" || flags.help) { console.log(USAGE); return; }
+  // Check the command before the payload: mistyping one used to report the
+  // missing <src> instead, which sends you looking in the wrong place.
+  if (!COMMANDS.includes(cmd)) {
+    die("unknown command '" + cmd + "' — expected one of: " + COMMANDS.join(", ") + " (run 'help')");
+  }
 
   const state = loadState(pos[1]);
 
@@ -238,7 +265,7 @@ function main() {
       const status = flags.status || "new";
       if (!logic.STATUS_TYPES.includes(status)) die("--status must be one of: " + logic.STATUS_TYPES.join(", "));
       const now = new Date().toISOString();
-      const found = typeof flags.found === "string" ? flags.found : now.slice(0, 10);
+      const found = askDate("found", flags.found, now.slice(0, 10));
       const events = [logic.makeEvent("new", found)];
       if (status !== "new") {
         const extra = {};
@@ -261,7 +288,7 @@ function main() {
       if (!chip) die("--marker <nr> required (1.." + car.chips.length + ")");
       const type = flags.type;
       if (!ADDABLE.includes(type)) die("--type must be one of: " + ADDABLE.join(", "));
-      const date = typeof flags.date === "string" ? flags.date : new Date().toISOString().slice(0, 10);
+      const date = askDate("date", flags.date, new Date().toISOString().slice(0, 10));
       const extra = {};
       if (typeof flags.where === "string" && WHERE_TYPES[type]) extra.where = flags.where;
       if (typeof flags.note === "string") extra.note = flags.note;
@@ -278,8 +305,6 @@ function main() {
     case "encode":
       emit(state, flags);
       break;
-    default:
-      die("unknown command '" + cmd + "' — run 'shieldchipiii.js help'");
   }
 }
 
