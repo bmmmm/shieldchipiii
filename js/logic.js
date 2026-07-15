@@ -69,7 +69,7 @@
     if (opts && opts.inFov) return { key: "recReplaceFov", level: "danger" };
     var size = chip.size;
     if (size === "crackL") return { key: "recReplaceBig", level: "danger" };
-    if (size === "crackM" || size === "e2") return { key: "recBorderline", level: "warn" };
+    if (size === "crackM") return { key: "recBorderline", level: "warn" };
     return { key: "recRepairable", level: "ok" }; // small, outside FOV, off the rim
   }
 
