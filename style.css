@@ -4,7 +4,7 @@
   --panel: #161b22;
   --line: #30363d;
   --fg: #e6edf3;
-  --muted: #8b949e;
+  --muted: #98a2ad; /* ~5.8:1 on --panel — this colour carries 12px UI text */
   --accent: #58a6ff;
   --warn: #f0883e;
   --ok: #3fb950;
@@ -149,7 +149,10 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .pop-x { font-size: 18px; line-height: 1; padding: 0 6px; }
 .rec { margin: 8px 0; padding: 7px 9px; border-radius: 6px; border-left: 3px solid var(--muted); background: rgba(127,127,127,.08); }
 .rec-label { color: var(--muted); }
-.rec-src { color: var(--muted); text-decoration: none; font-size: 11px; vertical-align: super; }
+/* Inline in running text, so the enlarged hit box must not swallow clicks
+   meant for the words beside it: grow rightward and vertically, barely left. */
+.rec-src { color: var(--muted); text-decoration: none; font-size: 12px; vertical-align: super;
+  display: inline-block; padding: 4px 6px; margin: -4px -2px; }
 .rec-src:hover, .rec-src:focus { color: var(--accent); }
 .rec.rec-ok { border-left-color: var(--ok); }
 .rec.rec-warn { border-left-color: var(--warn); }
@@ -191,6 +194,18 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 #chipTable tr { cursor: pointer; }
 #chipTable tr:hover td { background: var(--panel); }
 #chipTable tr.selected td { background: var(--panel); box-shadow: inset 2px 0 var(--accent); }
+#chipTable th { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line);
+  color: var(--muted); font-size: 12px; font-weight: 600; text-transform: capitalize; }
+/* Rows and markers are keyboard buttons now — Tab needs somewhere visible to be. */
+#chipTable tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.marker:focus { outline: none; }
+.marker:focus-visible .hit { stroke: var(--accent); stroke-width: 2.5; }
+.marker-popup:focus { outline: none; }
+.marker-popup:focus-visible { outline: 2px solid var(--accent); }
+/* Text only a screen reader sees — the visual channel already carries it as
+   colour, glyph or title. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 .rule { border-left: 3px solid var(--warn); padding-left: 12px; }
 .rule p { margin: 4px 0; color: var(--muted); }
@@ -297,6 +312,7 @@ footer a { color: var(--accent); text-decoration: none; }
   .rec-src {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 44px; min-height: 44px; vertical-align: middle; font-size: 15px;
+    margin: 0; /* the fine-pointer hit-growth margins would overlap the select below */
   }
   /* 44px rows: the table is the easiest way to reach a chip on a phone. */
   #chipTable td { padding: 12px 8px; }
@@ -309,4 +325,12 @@ footer a { color: var(--accent); text-decoration: none; }
   /* The sync-panel and dialog CTAs are the reach-heavy controls here — give the
      big primary and full-width backup buttons a comfortable floor above 44px. */
   #copyLink, #pasteGo, .backup-item > button, .backup-item > .filebtn, .import-actions button { min-height: 48px; }
+}
+
+/* The app's one animation is the smooth scroll to the glass. scrollIntoView
+   is called without a behavior, so it follows this — one media query and
+   reduced motion is honoured everywhere. */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }

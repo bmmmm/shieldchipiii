@@ -11,6 +11,17 @@
     new: "m-new", observing: "m-observing", repair_planned: "m-planned",
     repaired: "m-repaired", irreparable: "m-irreparable",
   };
+  // i18n key per status, for the marker's spoken label — same split as
+  // app.js' STATUS_KEY. Resolved lazily: i18n loads before render, but the
+  // test rig assembles SC in its own order.
+  var STATUS_KEY = {
+    new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
+    repaired: "statusRepaired", irreparable: "statusIrreparable",
+  };
+  function statusLabel(chip) {
+    var i18n = window.SC.i18n;
+    return i18n ? i18n.t(STATUS_KEY[logic.currentStatus(chip)]) : logic.currentStatus(chip);
+  }
 
   var M = 20;          // outer margin in viewBox units
   var BOTTOM_W = 960;  // glass bounding-box width in viewBox units
@@ -104,7 +115,8 @@
       var box = shapes.chipToBox(p, chip);
       var x = box.x * BOTTOM_W, y = box.y * h;
       var sel = chip.id === selectedId ? " selected" : "";
-      parts.push('<g class="marker' + sel + '" data-id="' + esc(chip.id) + '" transform="translate(' + x.toFixed(1) + "," + y.toFixed(1) + ')">' +
+      parts.push('<g class="marker' + sel + '" data-id="' + esc(chip.id) + '" tabindex="0" role="button"' +
+        ' aria-label="#' + (i + 1) + " · " + esc(statusLabel(chip)) + '" transform="translate(' + x.toFixed(1) + "," + y.toFixed(1) + ')">' +
         (sel ? '<circle class="sel-ring" r="24"/>' : "") +
         '<circle class="hit" r="26"/>' +
         markerGlyph(chip) +

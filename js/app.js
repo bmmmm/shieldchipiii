@@ -181,15 +181,24 @@
       var rec = logic.recommend(k, { inMargin: edge, inFov: fov });
       var found = logic.foundDate(k);
       var badges = (fov ? "⌖ " : "") + (edge ? "▣ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
-      return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '">' +
+      return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '" tabindex="0" role="button">' +
         "<td>" + (i + 1) + "</td>" +
         '<td class="sym">' + ascii.markerChar(k) + "</td>" +
         "<td>" + esc(sizeLabel(k.size)) + "</td>" +
         "<td>" + esc(t(STATUS_KEY[status])) + "</td>" +
         "<td>" + esc(found) + "</td>" +
-        '<td class="rec-dot rec-' + rec.level + '" title="' + esc(t(rec.key, vars)) + '">' + badges + "</td></tr>";
+        // The dot is colour and the badges are bare glyphs; the advice itself
+        // sits in title, which a screen reader skips — so it repeats as text
+        // only a screen reader sees.
+        '<td class="rec-dot rec-' + rec.level + '" title="' + esc(t(rec.key, vars)) + '">' +
+          '<span aria-hidden="true">' + badges + "</span>" +
+          '<span class="sr-only">' + esc(t(rec.key, vars)) + "</span>" +
+        "</td></tr>";
     }).join("");
-    $("chipTable").innerHTML = "<table><tbody>" + rows + "</tbody></table>";
+    var head = "<thead><tr>" + ["thNum", "thSym", "size", "thStatus", "evNew", "recommendation"].map(function (key) {
+      return "<th>" + esc(t(key)) + "</th>";
+    }).join("") + "</tr></thead>";
+    $("chipTable").innerHTML = "<table>" + head + "<tbody>" + rows + "</tbody></table>";
   }
 
   function renderWindshield() { render.windshield(svg, car(), selectedId); }
@@ -245,6 +254,8 @@
       return '<option value="' + ty + '">' + esc(t(EVENT_KEY[ty])) + "</option>";
     }).join("");
 
+    // The dialog announces itself the way the marker does: number and status.
+    popup.setAttribute("aria-label", "#" + idx + " · " + t(STATUS_KEY[status]));
     popup.innerHTML =
       '<div class="popup-head">' +
         "<strong>#" + idx + " · " + esc(t(STATUS_KEY[status])) + "</strong>" +
@@ -288,15 +299,22 @@
     popup.style.top = top + "px";
   }
 
-  function openPopup(id) {
+  // Where focus goes back to on close. Kept as kind+id, not as an element:
+  // the table and the glass are rebuilt via innerHTML while the popup is
+  // open, so any element grabbed at open time is dead by close time.
+  var popupOpener = null;
+
+  function openPopup(id, from) {
     var chip = chipById(id);
     if (!chip) { closePopup(); return; }
+    popupOpener = { kind: from === "row" ? "row" : "marker", id: id };
     selectedId = id;
     popup.hidden = false;
     buildPopup(chip);
     positionPopup(chip);
     renderWindshield();
     renderChipTable();
+    popup.focus({ preventScroll: true });
   }
 
   function refreshPopup() {
@@ -307,11 +325,22 @@
   }
 
   function closePopup() {
+    // Only restore focus if it was actually inside the popup — closePopup
+    // also runs on language toggles and shape edits, where stealing focus
+    // from whatever the user is on would be the bug, not the fix.
+    var hadFocus = popup.contains(document.activeElement);
     selectedId = null;
     popup.hidden = true;
     popup.innerHTML = "";
     renderWindshield();
     renderChipTable();
+    if (hadFocus && popupOpener) {
+      var el = document.querySelector(popupOpener.kind === "row"
+        ? '#chipTable tr[data-id="' + popupOpener.id + '"]'
+        : '.marker[data-id="' + popupOpener.id + '"]');
+      if (el) el.focus({ preventScroll: true });
+    }
+    popupOpener = null;
   }
 
   // ---------- popup interactions (delegated) ----------
@@ -549,12 +578,37 @@
     openPopup(chip.id);
   });
 
+  // Toggle from a row — one path for click and keyboard. The scroll takes
+  // its smoothness from the CSS scroll-behavior, so reduced motion is
+  // honoured without a second code path.
+  function rowActivate(row) {
+    if (row.dataset.id === selectedId) { closePopup(); return; }
+    openPopup(row.dataset.id, "row");
+    $("glassStage").scrollIntoView({ block: "center" });
+  }
+
   $("chipTable").addEventListener("click", function (e) {
     var row = e.target.closest("tr[data-id]");
+    if (row) rowActivate(row);
+  });
+
+  // Rows carry role="button", so Enter and Space must do what a click does.
+  $("chipTable").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var row = e.target.closest("tr[data-id]");
     if (!row) return;
-    if (row.dataset.id === selectedId) { closePopup(); return; }
-    openPopup(row.dataset.id);
-    $("glassStage").scrollIntoView({ behavior: "smooth", block: "center" });
+    e.preventDefault(); // Space would scroll the page
+    rowActivate(row);
+  });
+
+  // Markers are focusable buttons in the SVG; Enter or Space opens what a
+  // tap opens. Dragging stays pointer-only — the popup covers editing.
+  svg.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var g = e.target.closest(".marker");
+    if (!g) return;
+    e.preventDefault();
+    openPopup(g.dataset.id);
   });
 
   window.addEventListener("resize", function () { if (!popup.hidden && selectedId) positionPopup(chipById(selectedId)); });

@@ -41,6 +41,9 @@
 
     // sizes
     size: { de: "Größe", en: "Size" },
+    thNum: { de: "Nr.", en: "No." },
+    thSym: { de: "Symbol", en: "Symbol" },
+    thStatus: { de: "Status", en: "Status" },
     sizeC10: { de: "< 10-Cent-Münze", en: "< 10-cent coin" },
     sizeC50: { de: "< 50-Cent-Münze", en: "< 50-cent coin" },
     // The repair threshold, named after the coin the local shop measures with
