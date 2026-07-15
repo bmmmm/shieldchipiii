@@ -130,6 +130,14 @@
 
   // ---------- marker popup ----------
 
+  // Cite the criteria behind an advice — only the ones we took from a shop.
+  function recSourceLink(rec) {
+    var url = rec.source && logic.SOURCES[rec.source];
+    if (!url) return "";
+    return ' <a class="rec-src" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"' +
+      ' title="' + esc(t("recSource")) + '" aria-label="' + esc(t("recSource")) + '">ⓘ</a>';
+  }
+
   function buildPopup(chip) {
     var idx = car().chips.indexOf(chip) + 1;
     var status = logic.currentStatus(chip);
@@ -163,7 +171,7 @@
         "<strong>#" + idx + " · " + esc(t(STATUS_KEY[status])) + "</strong>" +
         '<button class="ghost pop-x" data-act="close" title="' + esc(t("close")) + '">×</button>' +
       "</div>" +
-      '<div class="rec rec-' + rec.level + '"><span class="rec-label">' + esc(t("recommendation")) + ":</span> " + esc(t(rec.key)) + "</div>" +
+      '<div class="rec rec-' + rec.level + '"><span class="rec-label">' + esc(t("recommendation")) + ":</span> " + esc(t(rec.key)) + recSourceLink(rec) + "</div>" +
       '<div class="popup-fields">' +
         '<label class="pf">' + esc(t("size")) + ' <select data-act="size">' + sizeOpts + "</select></label>" +
         // Both zone facts are derived from the position — shown, not editable.

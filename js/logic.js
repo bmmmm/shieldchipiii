@@ -51,14 +51,27 @@
 
   function insuranceReported(chip) { return !!lastEventOfType(chip, "insurance_reported"); }
 
+  // Where the repair criteria come from, so the UI can link them.
+  var SOURCES = { carglass: "https://www.carglass.de/steinschlag-reparatur" };
+  // Advice taken from those published criteria — as opposed to the
+  // status-driven advice below, which is our own and gets no citation.
+  var SOURCED_KEYS = ["recRepairable", "recReplaceFov", "recReplaceEdge", "recReplaceCrack"];
+
   // Repair recommendation from current status + geometry + size, following the
   // criteria glass shops use (Carglass): outside the driver's field of view,
   // smaller than a 2-euro coin, and more than 10 cm from the edge.
+  // Returns { key, level, source? } — key is an i18n key, level ∈ ok|warn|danger
+  // drives color, source is a SOURCES id when the rule is someone else's.
+  function recommend(chip, opts) {
+    var rec = advise(chip, opts);
+    if (SOURCED_KEYS.indexOf(rec.key) !== -1) rec.source = "carglass";
+    return rec;
+  }
+
   // `opts.inMargin` / `opts.inFov` are the caller's geometry checks (shapes.js)
   // — geometry lives there, so it's passed in rather than imported here. Both
   // are derived from the chip's position, never user-set flags.
-  // Returns { key, level } — key is an i18n key, level ∈ ok|warn|danger drives color.
-  function recommend(chip, opts) {
+  function advise(chip, opts) {
     var status = currentStatus(chip);
     if (status === "repaired") return { key: "recWatchRepair", level: "ok" };
     if (status === "irreparable") return { key: "recIrreparable", level: "danger" };
@@ -109,7 +122,7 @@
 
   return {
     STATUS_TYPES: STATUS_TYPES, NEUTRAL_TYPES: NEUTRAL_TYPES, ALL_TYPES: ALL_TYPES,
-    STATUS_SYMBOL: STATUS_SYMBOL, SIZES: SIZES,
+    STATUS_SYMBOL: STATUS_SYMBOL, SIZES: SIZES, SOURCES: SOURCES,
     isCrack: isCrack, currentStatus: currentStatus, timeline: timeline,
     lastEventOfType: lastEventOfType, insuranceReported: insuranceReported,
     recommend: recommend, makeEvent: makeEvent, migrateChip: migrateChip, uid: uid,

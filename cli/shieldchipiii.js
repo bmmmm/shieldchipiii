@@ -117,6 +117,7 @@ function printCar(car, opts) {
   if (!car.chips.length) { console.log("  (no entries)"); return; }
   const params = shapes.paramsFor(car);
   console.log("   # sym size            status          found      fov  edge ins");
+  const sources = new Set();
   car.chips.forEach((k, i) => {
     console.log(chipLine(k, i, params, car.wheel));
     const rec = logic.recommend(k, {
@@ -124,7 +125,10 @@ function printCar(car, opts) {
       inFov: shapes.inFov(params, k, car.wheel),
     });
     console.log("     -> " + (REC_LABEL[rec.key] || rec.key));
+    if (rec.source) sources.add(logic.SOURCES[rec.source]);
   });
+  // Cited once at the bottom rather than per line — same source every time.
+  sources.forEach((url) => console.log("\n   repair criteria: " + url));
 }
 
 function findCar(state, sel) {

@@ -66,6 +66,7 @@
 
     // recommendations
     recommendation: { de: "Empfehlung", en: "Recommendation" },
+    recSource: { de: "Kriterien laut Carglass — Quelle öffnen", en: "Criteria per Carglass — open source (German)" },
     recRepairable: { de: "Wahrscheinlich reparierbar. Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung — zeitnah machen lassen, bevor der Chip reißt.", en: "Likely repairable. Comprehensive insurance often covers the repair with no deductible — get it done soon, before it cracks." },
     recReplaceFov: { de: "Steinschlag im verbotenen Bereich: im direkten Sichtfeld der Fahrer:in (eine Reparaturspur würde die Sicht stören). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: in the driver's direct field of view (a repair mark would blur the view). A repair is unlikely — contact a glass service to check." },
     recReplaceEdge: { de: "Steinschlag im verbotenen Bereich: weniger als 10 cm vom Scheibenrand (dort sitzt die Spannung im Glas). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: less than 10 cm from the edge (that's where the glass is under stress). A repair is unlikely — contact a glass service to check." },

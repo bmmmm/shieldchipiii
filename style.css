@@ -150,6 +150,8 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .pop-x { font-size: 18px; line-height: 1; padding: 0 6px; }
 .rec { margin: 8px 0; padding: 7px 9px; border-radius: 6px; border-left: 3px solid var(--muted); background: rgba(127,127,127,.08); }
 .rec-label { color: var(--muted); }
+.rec-src { color: var(--muted); text-decoration: none; font-size: 11px; vertical-align: super; }
+.rec-src:hover, .rec-src:focus { color: var(--accent); }
 .rec.rec-ok { border-left-color: var(--ok); }
 .rec.rec-warn { border-left-color: var(--warn); }
 .rec.rec-danger { border-left-color: var(--danger); }
