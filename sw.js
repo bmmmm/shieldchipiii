@@ -5,7 +5,7 @@
  * passes through here — it lives in localStorage. */
 "use strict";
 
-var STAMP = "4e6e9ba"; /* stamp-assets:managed */
+var STAMP = "24ade99"; /* stamp-assets:managed */
 
 // Every file index.html loads with a ?v= stamp. test/smoke.js compares this
 // list against index.html, so a module added there and forgotten here fails
