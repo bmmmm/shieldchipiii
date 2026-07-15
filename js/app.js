@@ -835,10 +835,7 @@
     $("reportBody").innerHTML = "";
   }
   $("makeReport").addEventListener("click", function () {
-    $("reportBody").innerHTML = window.SC.report.html(car(), {
-      date: today(),
-      origin: location.href.split("#")[0],
-    });
+    $("reportBody").innerHTML = window.SC.report.html(car(), { date: today() });
     // The drawing goes in after the fact: report.html is a pure string
     // builder, and the SVG needs a live element to be rendered into.
     render.windshield($("reportBody").querySelector("[data-report-svg]"), car(), null);

@@ -673,7 +673,9 @@ const hasCtrl = (s) => Array.from(String(s))
       { id: "rb", x: 0.97, y: 0.9, size: "crackM", gone: {}, events: [SC.logic.makeEvent("new", "2026-07-02"), SC.logic.makeEvent("repaired", "2026-07-10")] },
     ],
   };
-  const rep = SC.report.html(repCar, { date: "2026-07-16", origin: "https://example.test/app/" });
+  const rep = SC.report.html(repCar, { date: "2026-07-16" });
+  assert.ok(rep.includes("github.com/bmmmm/shieldchipiii") && rep.includes("ko-fi.com/bmabma"),
+    "the sheet says where it came from and how to support it");
   assert.ok(rep.includes("Stone chip report"), "the report follows the UI language (en)");
   assert.ok(rep.includes("Repo &lt;Golf&gt;") && !rep.includes("<Golf>"), "user text reaches the sheet escaped");
   assert.ok(rep.includes("data-report-svg"), "the sheet leaves a slot for the drawing");
@@ -689,7 +691,7 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.ok(rep.includes(SC.sources.criteriaFor("de").url), "the criteria source behind the verdicts is cited");
   assert.ok(rep.includes("2026-07-10") && rep.includes(SC.render.esc(SC.i18n.t("evRepaired"))), "the logbook lists the repair with its date");
   SC.i18n.set("de");
-  assert.ok(SC.report.html(repCar, { date: "2026-07-16", origin: "x" }).includes("Steinschlag-Bericht"),
+  assert.ok(SC.report.html(repCar, { date: "2026-07-16" }).includes("Steinschlag-Bericht"),
     "the report follows the UI language (de)");
 
   // --- every translation key the UI asks for has text in both languages ---

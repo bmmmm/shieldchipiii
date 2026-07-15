@@ -50,7 +50,7 @@
     reportPrint: { de: "Drucken / PDF", en: "Print / PDF" },
     reportCriteria: { de: "Beurteilt nach Carglass-Kriterien für {country}: Randzone {cm} cm, Sichtfeld 29 cm. Quelle:", en: "Judged by the Carglass criteria for {country}: edge zone {cm} cm, field of view 29 cm. Source:" },
     reportDisclaimer: { de: "Alle Angaben ohne Gewähr — ob repariert werden kann, entscheidet die Werkstatt am Fahrzeug.", en: "No guarantees — whether a repair is possible is decided at the shop, at the car." },
-    reportMadeWith: { de: "Erstellt mit shieldchipiii:", en: "Created with shieldchipiii:" },
+    reportMadeWith: { de: "Erstellt mit", en: "Created with" },
     sizeC10: { de: "< 10-Cent-Münze", en: "< 10-cent coin" },
     sizeC50: { de: "< 50-Cent-Münze", en: "< 50-cent coin" },
     // The repair threshold, named after the coin the local shop measures with

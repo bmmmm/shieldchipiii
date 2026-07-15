@@ -346,20 +346,33 @@ html { scroll-behavior: smooth; }
   margin: 20px auto; padding: 22px 28px 26px; border-radius: 8px;
 }
 .report-actions { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+/* letterhead: icon, name, date — the sheet introduces itself before the title */
+.rp-brand { display: flex; align-items: center; gap: 8px; padding-bottom: 8px;
+  margin-bottom: 12px; border-bottom: 2px solid var(--fg); }
+.rp-brand svg { width: 26px; height: 26px; flex: none; }
+.rp-brand-name { font-weight: 700; font-size: 15px; }
+.rp-brand-date { margin-left: auto; color: var(--muted); }
 .report-sheet h1 { margin: 0 0 2px; font-size: 22px; }
 .report-sheet h3 { margin: 0 0 4px; font-size: 15px; }
 .rp-meta { margin: 0 0 10px; color: var(--muted); }
-.report-sheet svg { width: 100%; height: auto; }
+.rp-meta strong { color: var(--fg); }
+.rp-svg { break-inside: avoid; }
+.rp-svg svg { width: 100%; height: auto; }
 .rp-legend { font-size: 13px; color: var(--muted); margin: 4px 0; }
 .rp-legend strong { color: var(--danger); font-weight: normal; }
 .rp-criteria { font-size: 13px; color: var(--muted); }
 .rp-criteria a { color: var(--accent); word-break: break-all; }
 .report-sheet table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; }
-.report-sheet th { text-align: left; font-size: 12px; color: var(--muted); text-transform: capitalize; }
-.report-sheet th, .report-sheet td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.report-sheet th, .report-sheet td { padding: 5px 8px; }
+.report-sheet th { text-align: left; font-size: 12px; color: var(--muted); text-transform: capitalize;
+  border-bottom: 2px solid var(--fg); }
+.report-sheet td { border-bottom: 1px solid var(--line); }
 .rp-chip { break-inside: avoid; margin: 12px 0; }
 .rp-tl { margin: 4px 0 0; padding-left: 20px; font-size: 13px; }
 .rp-disclaimer { color: var(--muted); font-size: 12px; margin: 16px 0 0; }
+.rp-links { color: var(--muted); font-size: 12px; margin: 4px 0 0; padding-top: 6px;
+  border-top: 1px solid var(--line); }
+.rp-links a { color: var(--accent); text-decoration: none; }
 
 @media print {
   /* Only while the report is open — a plain cmd+P on the app stays the app. */

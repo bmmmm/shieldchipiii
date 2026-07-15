@@ -38,7 +38,16 @@
     }).join("");
   }
 
-  // -> HTML string for the sheet. opts: { date: "YYYY-MM-DD", origin: url }
+  // The app icon, inline: the sheet must not depend on the network or on a
+  // relative path once it is a PDF in someone's mail.
+  var BRAND_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true">' +
+    '<rect width="64" height="64" rx="12" fill="#0d1117"/>' +
+    '<path d="M18 18 L46 18 L56 44 L8 44 Z" fill="#10161d" stroke="#e6edf3" stroke-width="3" stroke-linejoin="round"/>' +
+    '<rect x="27" y="19" width="10" height="6" rx="2" fill="#e6edf3"/>' +
+    '<circle cx="24" cy="34" r="4" fill="#f0883e"/>' +
+    '<path d="M38 36 l3 -4 l3 4 l4 -3" fill="none" stroke="#f0883e" stroke-width="2.5" stroke-linecap="round"/></svg>';
+
+  // -> HTML string for the sheet. opts: { date: "YYYY-MM-DD" }
   function html(car, opts) {
     var lang = window.SC.i18n.get();
     var p = shapes.paramsFor(car);
@@ -46,17 +55,19 @@
     var marginCm = sources.marginCmFor(code);
     var vars = { cm: marginCm.toLocaleString(lang), coin: t(sources.coinKeyFor(code)) };
     var chips = car.chips || [];
+    var STATUS_CLASS = window.SC.render.STATUS_CLASS;
     var out = [];
 
+    out.push('<div class="rp-brand">' + BRAND_SVG +
+      '<span class="rp-brand-name">shieldchipiii</span>' +
+      '<span class="rp-brand-date">' + esc(opts.date) + "</span></div>");
     out.push('<h1 id="reportTitleEl">' + esc(t("reportTitle")) + "</h1>");
-    out.push('<p class="rp-meta">' + esc(car.name || "🚗") + " · " +
+    out.push('<p class="rp-meta"><strong>' + esc(car.name || "🚗") + "</strong> · " +
       Math.round(p.widthCm) + " × " + Math.round(p.heightCm) + " cm · " +
-      esc(t("wheel")) + " " + esc(t(car.wheel === "right" ? "wheelRight" : "wheelLeft")) + " · " +
-      esc(opts.date) + "</p>");
+      esc(t("wheel")) + " " + esc(t(car.wheel === "right" ? "wheelRight" : "wheelLeft")) + "</p>");
 
     out.push('<div class="rp-svg"><svg data-report-svg role="img" aria-label="windshield diagram"></svg></div>');
 
-    var STATUS_CLASS = window.SC.render.STATUS_CLASS;
     out.push('<p class="rp-legend">' + logic.STATUS_TYPES.map(function (st) {
       return '<span class="lg ' + STATUS_CLASS[st] + '">●</span> ' + esc(t(logic.STATUS_KEY[st]));
     }).join(" · ") + "</p>");
@@ -95,14 +106,18 @@
       out.push(chips.map(function (k, i) {
         var f = facts(p, k, car, marginCm);
         var rec = logic.recommend(k, { inMargin: f.edge, inFov: f.fov });
-        return '<div class="rp-chip"><h3>#' + (i + 1) + " · " + esc(t(logic.STATUS_KEY[logic.currentStatus(k)])) + "</h3>" +
+        var st = logic.currentStatus(k);
+        return '<div class="rp-chip"><h3>#' + (i + 1) +
+          ' <span class="lg ' + STATUS_CLASS[st] + '">●</span> ' + esc(t(logic.STATUS_KEY[st])) + "</h3>" +
           '<p class="rec rec-' + rec.level + '">' + esc(t("recommendation")) + ": " + esc(t(rec.key, vars)) + "</p>" +
           '<ul class="rp-tl">' + timelineItems(k) + "</ul></div>";
       }).join(""));
     }
 
-    out.push('<p class="rp-disclaimer">' + esc(t("reportDisclaimer")) + "<br>" +
-      esc(t("reportMadeWith")) + " " + esc(opts.origin || "") + "</p>");
+    out.push('<p class="rp-disclaimer">' + esc(t("reportDisclaimer")) + "</p>");
+    out.push('<p class="rp-links">' + esc(t("reportMadeWith")) + " shieldchipiii · " +
+      '<a href="https://github.com/bmmmm/shieldchipiii" rel="noopener">github.com/bmmmm/shieldchipiii</a> · ' +
+      '<a href="https://ko-fi.com/bmabma" rel="noopener">☕ ko-fi.com/bmabma</a></p>');
 
     return out.join("");
   }
