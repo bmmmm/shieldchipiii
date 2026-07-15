@@ -336,6 +336,8 @@
     }
     if (kind === "delEvent") {
       var chip = chipById(selectedId);
+      chip.gone = chip.gone || {};
+      chip.gone[act.dataset.id] = store.now(); // tombstone: a merge must not bring it back
       chip.events = chip.events.filter(function (ev) { return ev.id !== act.dataset.id; });
       chip.up = store.now();
       persist();

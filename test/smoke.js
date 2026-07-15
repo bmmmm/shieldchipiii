@@ -494,14 +494,48 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.strictEqual(rStats.blocked, 1, "one remote entity blocked by a local tombstone");
   assert.strictEqual(rStats.removed, 1, "one local entity removed by a remote tombstone");
 
+  // --- a deleted event stays deleted across a merge (#4) ---
+  // The x on a timeline row tombstones the event id (chip.gone); the union used
+  // to treat "deleted here" and "never seen" as the same thing and push it back.
+  const evChip = (id, events, gone) => ({ id, x: 0.5, y: 0.5, size: "c10", up: T2, gone: gone || {}, events });
+  const evLocal = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [evChip("kE", [ev("new", "2026-01-01", "e1")], { e2: T3 })])] };
+  const evRemote = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [evChip("kE", [ev("new", "2026-01-01", "e1"), ev("note", "2026-02-01", "e2")])])] };
+  const rEvDel = SC.store.merge(clone(evLocal), clone(evRemote));
+  assert.strictEqual(rEvDel.state.cars[0].chips[0].events.length, 1, "a locally deleted event stays deleted against an older remote");
+  assert.strictEqual(rEvDel.state.cars[0].chips[0].events[0].id, "e1");
+  assert.strictEqual(rEvDel.stats.blocked, 1, "the blocked event is counted");
+
+  // the other direction: a remote tombstone buries the local copy of the event
+  const rEvBury = SC.store.merge(clone(evRemote), clone(evLocal));
+  assert.strictEqual(rEvBury.state.cars[0].chips[0].events.length, 1, "a remote event tombstone buries the local copy");
+  assert.strictEqual(rEvBury.state.cars[0].chips[0].events[0].id, "e1");
+  assert.strictEqual(rEvBury.stats.removed, 1, "the buried event is counted");
+
+  // two devices each deleted the other's remaining event: the merge may not
+  // leave an empty timeline — normalizeChip's guarantee, held through a merge
+  const evA = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [evChip("kE", [ev("new", "2026-01-01", "e1")], { e2: T3 })])] };
+  const evB = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [evChip("kE", [ev("note", "2026-02-01", "e2")], { e1: T3 })])] };
+  const rEvBoth = SC.store.merge(clone(evA), clone(evB));
+  const evLeft = rEvBoth.state.cars[0].chips[0].events;
+  assert.strictEqual(evLeft.length, 1, "crossed event deletions leave a fresh timeline, never an empty one");
+  assert.strictEqual(evLeft[0].type, "new", "the replacement is a fresh find event");
+  assert.ok(!["e1", "e2"].includes(evLeft[0].id), "and not one of the buried events");
+
+  // chip.gone is vetted and carried by normalizeChip
+  const bigEvKey = { ok: T1, bad: 7 }; bigEvKey["e_" + "x".repeat(60)] = T1;
+  const vetted = SC.logic.normalizeCars([{ id: "cV", chips: [{ x: 0.1, y: 0.1, gone: bigEvKey }] }])[0].chips[0];
+  assert.deepStrictEqual(Object.keys(vetted.gone), ["ok"], "chip.gone keeps clean entries and drops junk");
+
   // --- gone survives every serialization path (share round-trip + CLI zlib) ---
   const goneState = SC.store.defaultState();
   goneState.gone = { deadCar: T2 };
   goneState.cars[0].gone = { deadChip: T3 };
+  goneState.cars[0].chips.push({ id: "kQ", x: 0.5, y: 0.5, size: "c10", up: T2, gone: { deadEvent: T3 }, events: [ev("new", "2026-01-01", "eQ")] });
   const goneTok = await SC.share.encodeState(goneState);
   const goneDec = await SC.share.decodeToken("#" + goneTok);
   assert.strictEqual(goneDec.gone.deadCar, T2, "state-level tombstone survives the share round-trip");
   assert.strictEqual(goneDec.cars[0].gone.deadChip, T3, "per-car tombstone survives too");
+  assert.strictEqual(goneDec.cars[0].chips[0].gone.deadEvent, T3, "per-chip event tombstone survives too");
   const viaZlibGone = JSON.parse(zlib.gunzipSync(Buffer.from(goneTok.slice(2), "base64url")).toString("utf8"));
   assert.strictEqual(viaZlibGone.gone.deadCar, T2, "the CLI zlib decode path sees the state tombstone");
   assert.strictEqual(viaZlibGone.cars[0].gone.deadChip, T3, "and the per-car tombstone");

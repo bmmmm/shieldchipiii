@@ -198,6 +198,7 @@
       x: clamp01(chip.x), y: clamp01(chip.y),
       size: SIZES.indexOf(chip.size) !== -1 ? chip.size : "c10",
       events: events,
+      gone: cleanGone(chip.gone),
       up: cleanText(chip.up, MAX.up),
     };
   }

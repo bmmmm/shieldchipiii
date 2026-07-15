@@ -12,6 +12,7 @@
       id: logic.uid("k_"), x: pos.x, y: pos.y,
       size: "c10",
       events: [logic.makeEvent("new", today)],
+      gone: {},
       up: now(),
     };
   }
@@ -91,8 +92,9 @@
   function heal(gone, id, up) { if (gone[id] && (up || "") > gone[id]) delete gone[id]; }
 
   // Merge remote into local: union by id, newer `up` wins per entity, chip
-  // events unioned by event id so a timeline never loses history. Deletions
-  // travel as tombstones (state.gone -> carId, car.gone -> chipId): a newer
+  // events unioned by event id so a timeline never loses history — unless an
+  // event was deliberately deleted. Deletions travel as tombstones (state.gone
+  // -> carId, car.gone -> chipId, chip.gone -> eventId): a newer
   // tombstone blocks a stale remote copy from resurrecting and buries a local
   // entity the other device has since deleted. Returns { state, stats }, where
   // state is `local` mutated in place and stats feed the import summary.
@@ -123,13 +125,20 @@
           stats.added++;
           return;
         }
+        lk.gone = unionGone(lk.gone, rk.gone);
         if ((rk.up || "") > (lk.up || "")) {
           ["x", "y", "size", "up"].forEach(function (f) { lk[f] = rk[f]; });
           stats.updated++;
         }
         var seen = {};
         (lk.events || []).forEach(function (e) { seen[e.id] = true; });
-        (rk.events || []).forEach(function (e) { if (!seen[e.id]) { lk.events.push(e); stats.events++; } });
+        (rk.events || []).forEach(function (e) {
+          if (seen[e.id]) return;
+          // An event carries no `up` to outlive a tombstone with — deleted is final.
+          if (lk.gone[e.id]) { stats.blocked++; return; }
+          lk.events.push(e);
+          stats.events++;
+        });
       });
     });
 
@@ -147,6 +156,14 @@
       lc.chips = lc.chips.filter(function (lk) {
         if (tombNewer(lc.gone[lk.id], lk.up)) { stats.removed++; return false; }
         heal(lc.gone, lk.id, lk.up);
+        lk.gone = lk.gone || {};
+        lk.events = (lk.events || []).filter(function (e) {
+          if (lk.gone[e.id]) { stats.removed++; return false; }
+          return true;
+        });
+        // Two devices can each delete a different event until none is left; a
+        // chip always keeps a timeline (normalizeChip's guarantee, held here too).
+        if (!lk.events.length) lk.events.push(logic.makeEvent("new", now().slice(0, 10)));
         return true;
       });
       return true;
