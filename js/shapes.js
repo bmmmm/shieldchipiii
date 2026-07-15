@@ -8,8 +8,16 @@
 
   // Shape ratios are of the bounding box; the drawing is the (foreshortened)
   // view from inside, so it is NOT to scale — real sizes come from widthCm.
-  //   top    = top edge width / bounding-box width    (< 1: view from inside, top is shorter)
-  //   bottom = bottom edge width / bounding-box width (1 = widest; the default)
+  //
+  // Why the bottom edge is the narrow one: seen from the driver's seat the
+  // glass leans away, so its BOTTOM edge (at the end of the bonnet) is the far
+  // one (~80 cm) and its TOP edge (at the roof line, nearly overhead) is the
+  // near one (~55 cm). Perspective therefore widens the top by roughly 1.4,
+  // while the body only tapers it by ~0.9 — net, the top reads slightly wider.
+  // The flatter the screen, the stronger this is (sport > van). In practice a
+  // windshield looks close to rectangular from inside, not strongly trapezoid.
+  //   top    = top edge width / bounding-box width
+  //   bottom = bottom edge width / bounding-box width (the narrow one here)
   //   aspect = glass height / bounding-box width      (drawn, foreshortened)
   //   round  = corner radius / glass height
   //   bow    = vertical arch of top/bottom edges / glass height (0 = straight;
@@ -21,11 +29,14 @@
   //   wheelCm = steering wheel diameter. Typical: 38-40 comfort (saloon/estate/
   //            SUV), 36-37 compact/sporty, 32-35 aftermarket sports wheels.
   var PRESETS = {
-    compact: { top: 0.68, bottom: 1.00, aspect: 0.40, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76,  wheelCm: 37 },
-    sedan:   { top: 0.62, bottom: 1.00, aspect: 0.36, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85,  wheelCm: 38 },
-    suv:     { top: 0.74, bottom: 1.00, aspect: 0.44, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92,  wheelCm: 39 },
-    van:     { top: 0.85, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104, wheelCm: 40 },
-    sport:   { top: 0.55, bottom: 0.96, aspect: 0.28, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72,  wheelCm: 34 },
+    compact: { top: 1.00, bottom: 0.90, aspect: 0.40, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76,  wheelCm: 37 },
+    sedan:   { top: 1.00, bottom: 0.88, aspect: 0.36, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85,  wheelCm: 38 },
+    suv:     { top: 1.00, bottom: 0.92, aspect: 0.44, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92,  wheelCm: 39 },
+    // Van: screen is steep, so perspective barely widens the top and the body
+    // taper wins — the only preset that stays (just) wider at the bottom.
+    van:     { top: 0.98, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104, wheelCm: 40 },
+    // Sport: flattest screen -> the top edge is nearest -> widest at the top.
+    sport:   { top: 1.00, bottom: 0.82, aspect: 0.28, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72,  wheelCm: 34 },
   };
   var PRESET_ORDER = ["compact", "sedan", "suv", "van", "sport"];
 
@@ -36,7 +47,7 @@
   var FOV_CM = 29; // DIN A4 long edge
 
   var LIMITS = {
-    top:    { min: 0.35, max: 0.98 },
+    top:    { min: 0.35, max: 1.00 },
     bottom: { min: 0.50, max: 1.00 },
     aspect: { min: 0.20, max: 0.65 },
     round:  { min: 0.00, max: 0.25 },

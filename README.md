@@ -14,8 +14,11 @@ sharing between devices works via URL token, JSON export — or the terminal.
 
 ## Features
 
-- **Windshield diagram** — view from the inside (top edge shorter, trapezoid
-  distortion), mirror top center, and a schematic cockpit for orientation:
+- **Windshield diagram** — the view from the driver's seat, where a pane looks
+  close to rectangular: the top edge (roof line, nearly overhead) is the near
+  one and the bottom edge (end of the bonnet) the far one, so perspective
+  widens the top about as much as the body tapers it. Mirror top center, plus
+  a schematic cockpit for orientation:
   the steering wheel is drawn to its real diameter (38–40 cm comfort, 36–37
   compact/sporty, 32–35 aftermarket sports — adjustable), foreshortened into
   an ellipse like the glass. 5 shape presets (compact, sedan, SUV, van/bus,
