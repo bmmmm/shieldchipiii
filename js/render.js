@@ -8,7 +8,7 @@
   // CSS marker class per current status.
   var STATUS_CLASS = {
     new: "m-new", observing: "m-observing", repair_planned: "m-planned",
-    repaired: "m-repaired", irreparable: "m-irreparable", replaced: "m-replaced",
+    repaired: "m-repaired", irreparable: "m-irreparable",
   };
 
   var M = 20;          // outer margin in viewBox units

@@ -344,6 +344,76 @@ const hasCtrl = (s) => Array.from(String(s))
   const merged2 = SC.store.merge(JSON.parse(JSON.stringify(merged)), remote2);
   assert.strictEqual(merged2.cars[0].chips.length, 2);
 
+  // --- the UI's wiring matches the page it wires up ---
+  // app.js talks to the DOM by id and to i18n by key, and both fail quietly:
+  // a wrong id throws deep in a handler, a missing key renders as the key.
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const appSrc = fs.readFileSync(path.join(root, "js/app.js"), "utf8");
+  const htmlIds = new Set(Array.from(html.matchAll(/\sid="([^"]+)"/g)).map((m) => m[1]));
+  Array.from(appSrc.matchAll(/\$\("([^"]+)"\)/g)).map((m) => m[1]).forEach((id) => {
+    assert.ok(htmlIds.has(id), "app.js reaches for #" + id + ", which index.html doesn't have");
+  });
+
+  // --- every translation key the UI asks for has text in both languages ---
+  const wanted = new Set();
+  Array.from(html.matchAll(/data-i18n(?:-ph)?="([^"]+)"/g)).forEach((m) => wanted.add(m[1]));
+  // Any string literal naming a dictionary key counts as a use: keys reach t()
+  // through arrays, ternaries and helpers (flash(btn, "copied")) as often as
+  // directly, and missing one of those would fail the wrong way — claiming a
+  // live key is dead.
+  Array.from(appSrc.matchAll(/"([A-Za-z]\w*)"/g)).forEach((m) => {
+    if (SC.i18n.DICT[m[1]]) wanted.add(m[1]);
+  });
+  // Labels reached through a lookup table rather than a literal, by convention:
+  // status -> statusNew, event -> evNew, size -> sizeC10.
+  const pascal = (s) => s.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join("");
+  SC.logic.STATUS_TYPES.forEach((ty) => wanted.add("status" + pascal(ty)));
+  SC.logic.ALL_TYPES.forEach((ty) => wanted.add("ev" + pascal(ty)));
+  SC.logic.SIZES.forEach((s) => wanted.add("size" + pascal(s)));
+  SC.shapes.PRESET_ORDER.forEach((s) => wanted.add("shape" + pascal(s)));
+
+  // Every verdict recommend() can actually reach, by walking the real tree
+  // rather than trusting a hand-kept list — the crack rename got out of sync
+  // exactly because the list was kept by hand.
+  const verdicts = new Set();
+  SC.logic.STATUS_TYPES.forEach((st) => SC.logic.SIZES.forEach((size) => {
+    [true, false].forEach((inMargin) => [true, false].forEach((inFov) => {
+      const c = { size, events: [SC.logic.makeEvent("new", "2026-01-01"), SC.logic.makeEvent(st, "2026-02-01")] };
+      verdicts.add(SC.logic.recommend(c, { inMargin, inFov }).key);
+    }));
+  }));
+  verdicts.forEach((k) => wanted.add(k));
+
+  // Asserted against the dictionary, not through t(): t() falls back to English
+  // for a missing German string, so a German gap would read as a pass.
+  SC.i18n.LANGS.forEach((lang) => {
+    wanted.forEach((k) => {
+      assert.ok(SC.i18n.DICT[k] && SC.i18n.DICT[k][lang], 'i18n key "' + k + '" has no ' + lang + " text");
+    });
+  });
+
+  // Keys nobody asks for are dead weight in a file that is all strings.
+  const unused = Object.keys(SC.i18n.DICT).filter((k) => !wanted.has(k));
+  assert.deepStrictEqual(unused, [], "i18n keys defined but never used: " + unused.join(", "));
+
+  // The CLI keeps its own label table for the same verdicts.
+  const cliSrc = fs.readFileSync(path.join(root, "cli/shieldchipiii.js"), "utf8");
+  verdicts.forEach((k) => assert.ok(cliSrc.includes(k + ":"), "the CLI has no label for " + k));
+
+  // --- the car-model issue form asks for everything a preset needs ---
+  // The form is the only way a community model arrives, and GitHub ignores a
+  // prefill param that names no field — silently. `bottom`, `widthCm` and
+  // `wheelCm` were all added to the shape and never reached the form.
+  const formSrc = fs.readFileSync(path.join(root, ".github/ISSUE_TEMPLATE/car-model.yml"), "utf8");
+  const formIds = Array.from(formSrc.matchAll(/^\s{4}id:\s*(\S+)/gm)).map((m) => m[1]);
+  const snake = (k) => k.replace(/([A-Z])/g, (c) => "_" + c.toLowerCase());
+  Object.keys(SC.shapes.PRESETS.sedan)
+    .filter((k) => k !== "heightCm") // derived from widthCm — not the proposer's to set
+    .forEach((k) => {
+      assert.ok(formIds.includes(snake(k)),
+        "the car-model form asks for '" + snake(k) + "' — a preset can't be built without it");
+    });
+
   // --- sanitize rejects garbage ---
   assert.strictEqual(SC.store.sanitize({ foo: 1 }), null);
   assert.strictEqual(SC.store.sanitize({ v: 1, cars: [] }), null);

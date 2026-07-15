@@ -11,7 +11,7 @@
   "use strict";
 
   // Marker char reflects the current status (o=new ?=observing @=planned
-  // *=repaired X=irreparable ==replaced).
+  // *=repaired X=irreparable).
   function markerChar(chip) {
     return logic.STATUS_SYMBOL[logic.currentStatus(chip)] || "o";
   }

@@ -10,6 +10,9 @@ body:
         [app](https://bmmmm.github.io/shieldchipiii/), tweak the shape sliders
         until the diagram matches your windshield, then click
         **Propose as car model** — it prefills all values here.
+
+        The diagram is the view from the driver's seat, so the top edge is the
+        near one and reads about as wide as the bottom, or wider.
   - type: input
     id: car
     attributes:
@@ -22,15 +25,23 @@ body:
     id: top
     attributes:
       label: top
-      description: Top edge width / bottom edge width (0.35-0.98)
-      placeholder: "0.62"
+      description: Top edge width / bounding-box width (0.35-1.00)
+      placeholder: "1.00"
+    validations:
+      required: true
+  - type: input
+    id: bottom
+    attributes:
+      label: bottom
+      description: Bottom edge width / bounding-box width (0.50-1.00) — usually the narrow one
+      placeholder: "0.88"
     validations:
       required: true
   - type: input
     id: aspect
     attributes:
       label: aspect
-      description: Glass height / bottom edge width (0.20-0.65)
+      description: Drawn glass height / bounding-box width (0.20-0.65)
       placeholder: "0.36"
     validations:
       required: true
@@ -48,6 +59,25 @@ body:
       label: bow
       description: Edge arch / glass height (0.00-0.15, 0 = straight edges)
       placeholder: "0.07"
+    validations:
+      required: true
+  - type: input
+    id: width_cm
+    attributes:
+      label: width_cm
+      description: >
+        Real pane width in centimetres (100-200). This one carries the scale:
+        the 10 cm edge margin and the 29 cm field of view are measured against
+        it, so a preset without it can't judge a chip.
+      placeholder: "142"
+    validations:
+      required: true
+  - type: input
+    id: wheel_cm
+    attributes:
+      label: wheel_cm
+      description: Steering wheel diameter in centimetres (32-42)
+      placeholder: "38"
     validations:
       required: true
   - type: dropdown

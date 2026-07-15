@@ -46,13 +46,11 @@
     sizeCrackL: { de: "Riss groß (> 5 cm)", en: "crack, large (> 5 cm)" },
 
     // statuses (current state of a marker)
-    status: { de: "Status", en: "Status" },
     statusNew: { de: "offen", en: "open" },
     statusObserving: { de: "beobachten", en: "observing" },
     statusRepairPlanned: { de: "Reparatur geplant", en: "repair planned" },
     statusRepaired: { de: "repariert", en: "repaired" },
     statusIrreparable: { de: "irreparabel", en: "irreparable" },
-    statusReplaced: { de: "Scheibe getauscht", en: "glass replaced" },
 
     // timeline event types (verbs / log lines)
     evNew: { de: "entdeckt", en: "found" },
@@ -60,13 +58,12 @@
     evRepairPlanned: { de: "Reparatur geplant", en: "repair planned" },
     evRepaired: { de: "repariert", en: "repaired" },
     evIrreparable: { de: "als irreparabel markiert", en: "marked irreparable" },
-    evReplaced: { de: "Scheibe getauscht", en: "glass replaced" },
     evInsuranceReported: { de: "Versicherung gemeldet", en: "reported to insurance" },
     evNote: { de: "Notiz", en: "note" },
 
     // recommendations
     recommendation: { de: "Empfehlung", en: "Recommendation" },
-    recSource: { de: "Kriterien laut Carglass — Quelle öffnen", en: "Criteria per Carglass — open source (German)" },
+    recSource: { de: "Kriterien laut Carglass — Quelle öffnen", en: "Criteria per Carglass — open the source (in German)" },
     recRepairable: { de: "Wahrscheinlich reparierbar. Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung — zeitnah machen lassen, bevor der Chip reißt.", en: "Likely repairable. Comprehensive insurance often covers the repair with no deductible — get it done soon, before it cracks." },
     recReplaceFov: { de: "Steinschlag im verbotenen Bereich: im direkten Sichtfeld der Fahrer:in (eine Reparaturspur würde die Sicht stören). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: in the driver's direct field of view (a repair mark would blur the view). A repair is unlikely — contact a glass service to check." },
     recReplaceEdge: { de: "Steinschlag im verbotenen Bereich: weniger als 10 cm vom Scheibenrand (dort sitzt die Spannung im Glas). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: less than 10 cm from the edge (that's where the glass is under stress). A repair is unlikely — contact a glass service to check." },
@@ -74,19 +71,15 @@
     recPlanned: { de: "Reparatur geplant — Termin wahrnehmen, die Stelle bis dahin schonen (starke Temperaturwechsel und Waschanlage meiden).", en: "Repair planned — keep the appointment; until then avoid temperature shocks and car washes." },
     recWatchRepair: { de: "Repariert. Beobachten, ob die Stelle hält — reißt sie weiter, ist ein Scheibentausch fällig.", en: "Repaired. Keep an eye on it — if it keeps cracking, a replacement is due." },
     recIrreparable: { de: "Als irreparabel markiert — Scheibentausch veranlassen und mit der Versicherung klären.", en: "Marked irreparable — arrange a glass replacement and clear it with your insurer." },
-    recReplaced: { de: "Scheibe getauscht — erledigt.", en: "Glass replaced — done." },
 
     // marker popup
-    popupPosition: { de: "Position", en: "Position" },
     fov: { de: "Im Sichtfeld", en: "In field of view" },
     edgeDistance: { de: "Randabstand", en: "Edge distance" },
     yes: { de: "ja", en: "yes" },
     no: { de: "nein", en: "no" },
     timeline: { de: "Verlauf", en: "Timeline" },
-    addEvent: { de: "+ Ereignis", en: "+ event" },
     eventType: { de: "Was", en: "What" },
     eventDate: { de: "Wann", en: "When" },
-    eventWhere: { de: "Wo", en: "Where" },
     eventWherePh: { de: "z. B. Carglass Bonn", en: "e.g. Safelite" },
     eventNote: { de: "Notiz", en: "Note" },
     saveEvent: { de: "Eintragen", en: "Add" },
@@ -141,5 +134,8 @@
   }
 
   window.SC = window.SC || {};
-  window.SC.i18n = { t: t, get: get, set: set };
+  // DICT is exposed so the test can tell a missing translation from a present
+  // one: t() falls back to English, which is what the UI wants and exactly what
+  // would hide an untranslated string from an assertion.
+  window.SC.i18n = { t: t, get: get, set: set, DICT: DICT, LANGS: ["de", "en"] };
 })();

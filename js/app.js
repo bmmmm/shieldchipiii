@@ -18,11 +18,11 @@
   var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", e2: "sizeE2", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
   var STATUS_KEY = {
     new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
-    repaired: "statusRepaired", irreparable: "statusIrreparable", replaced: "statusReplaced",
+    repaired: "statusRepaired", irreparable: "statusIrreparable",
   };
   var EVENT_KEY = {
     observing: "evObserving", repair_planned: "evRepairPlanned", repaired: "evRepaired",
-    irreparable: "evIrreparable", replaced: "evReplaced", insurance_reported: "evInsuranceReported",
+    irreparable: "evIrreparable", insurance_reported: "evInsuranceReported",
     note: "evNote", new: "evNew",
   };
   // What the user can add from the timeline (all but the implicit initial "new").
@@ -72,13 +72,21 @@
     $("carTabs").innerHTML = html;
   }
 
+  // Split out of renderCarForm: tweaking a slider drops the preset, and the
+  // buttons have to say so without the sliders being rewritten underneath the
+  // finger that's still dragging one.
+  function renderShapeButtons() {
+    var c = car();
+    $("shapeButtons").innerHTML = shapes.PRESET_ORDER.map(function (key) {
+      return '<button class="shape-btn' + (c.shape === key && !c.adjust ? " active" : "") + '" data-shape="' + key + '">' + esc(t(SHAPE_KEY[key])) + "</button>";
+    }).join("");
+  }
+
   function renderCarForm() {
     var c = car();
     $("carName").value = c.name;
     var p = shapes.paramsFor(c);
-    $("shapeButtons").innerHTML = shapes.PRESET_ORDER.map(function (key) {
-      return '<button class="shape-btn' + (c.shape === key && !c.adjust ? " active" : "") + '" data-shape="' + key + '">' + esc(t(SHAPE_KEY[key])) + "</button>";
-    }).join("");
+    renderShapeButtons();
     $("adjTop").value = Math.round(p.top * 100);
     $("adjBottom").value = Math.round(p.bottom * 100);
     $("adjHeight").value = Math.round(p.aspect * 100);
@@ -336,6 +344,7 @@
     persist();
     $("adjWidthCmOut").textContent = $("adjWidthCm").value + " cm";
     $("adjWheelCmOut").textContent = $("adjWheelCm").value + " cm";
+    renderShapeButtons(); // the shape is no longer a plain preset
     renderWindshield();
     renderChipTable(); // the edge margin scales with the real width
   }
@@ -344,15 +353,23 @@
 
   // Opens a prefilled GitHub issue form with the current shape values, so
   // community car models can be collected without any server of our own.
+  // Every value a preset needs and the user can set goes along — a proposal
+  // missing the real width can't be turned into one (the 10 cm margin and the
+  // 29 cm field of view are measured against it).
   $("proposeShape").addEventListener("click", function () {
     var c = car();
     var p = shapes.paramsFor(c);
-    var url = "https://github.com/bmmmm/shieldchipiii/issues/new?template=car-model.yml" +
-      "&title=" + encodeURIComponent("[model] " + (c.name || "")) +
-      "&car=" + encodeURIComponent(c.name || "") +
-      "&top=" + p.top.toFixed(2) + "&aspect=" + p.aspect.toFixed(2) +
-      "&round=" + p.round.toFixed(2) + "&bow=" + p.bow.toFixed(2);
-    window.open(url, "_blank", "noopener");
+    var fields = {
+      title: "[model] " + (c.name || ""),
+      car: c.name || "",
+      top: p.top.toFixed(2), bottom: p.bottom.toFixed(2),
+      aspect: p.aspect.toFixed(2), round: p.round.toFixed(2), bow: p.bow.toFixed(2),
+      width_cm: String(Math.round(p.widthCm)), wheel_cm: String(Math.round(p.wheelCm)),
+    };
+    var query = Object.keys(fields).map(function (k) {
+      return k + "=" + encodeURIComponent(fields[k]);
+    }).join("&");
+    window.open("https://github.com/bmmmm/shieldchipiii/issues/new?template=car-model.yml&" + query, "_blank", "noopener");
   });
 
   $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); closePopup(); rerenderAll(); });
@@ -439,6 +456,13 @@
     if (popup.hidden) return;
     if (e.target.closest("#markerPopup, #windshield, #chipTable")) return;
     closePopup();
+  });
+
+  // Escape backs out of whatever is floating on top, innermost first.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!$("importOverlay").hidden) { $("importOverlay").hidden = true; return; }
+    if (!popup.hidden) closePopup();
   });
 
   // ---------- share ----------

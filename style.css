@@ -17,7 +17,6 @@
   --st-planned: #d29922;
   --st-repaired: #3fb950;
   --st-irreparable: #f85149;
-  --st-replaced: #8b949e;
 }
 @media (prefers-color-scheme: light) {
   :root {
@@ -118,8 +117,6 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .marker .crack.m-repaired { stroke: var(--st-repaired); }
 .marker .chip.m-irreparable { fill: var(--st-irreparable); }
 .marker .crack.m-irreparable { stroke: var(--st-irreparable); }
-.marker .chip.m-replaced { fill: var(--st-replaced); }
-.marker .crack.m-replaced { stroke: var(--st-replaced); }
 .marker-label { fill: var(--fg); font-family: var(--mono); font-size: 22px; }
 .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
 
@@ -132,7 +129,6 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .lg.m-planned { color: var(--st-planned); }
 .lg.m-repaired { color: var(--st-repaired); }
 .lg.m-irreparable { color: var(--st-irreparable); }
-.lg.m-replaced { color: var(--st-replaced); }
 .lg.fov { color: var(--danger); }
 .lg.edge { color: var(--danger); }
 /* derived zone facts — read-only, red when the chip is in a no-go zone */
@@ -185,7 +181,6 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 #chipTable tr.st-repair_planned td.sym { color: var(--st-planned); }
 #chipTable tr.st-repaired td.sym { color: var(--st-repaired); }
 #chipTable tr.st-irreparable td.sym { color: var(--st-irreparable); }
-#chipTable tr.st-replaced td.sym { color: var(--st-replaced); }
 
 /* chip table */
 #chipTable table { width: 100%; border-collapse: collapse; }

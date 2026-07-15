@@ -18,11 +18,11 @@ const SIZE_LABEL = {
 const SIZES = logic.SIZES;
 const STATUS_LABEL = {
   new: "open", observing: "observing", repair_planned: "repair planned",
-  repaired: "repaired", irreparable: "irreparable", replaced: "glass replaced",
+  repaired: "repaired", irreparable: "irreparable",
 };
 const EVENT_LABEL = {
   new: "found", observing: "observed", repair_planned: "repair planned",
-  repaired: "repaired", irreparable: "irreparable", replaced: "glass replaced",
+  repaired: "repaired", irreparable: "irreparable",
   insurance_reported: "insurance reported", note: "note",
 };
 const REC_LABEL = {
@@ -33,7 +33,6 @@ const REC_LABEL = {
   recPlanned: "repair planned — keep the appointment, avoid temp shocks",
   recWatchRepair: "repaired — watch that it holds",
   recIrreparable: "irreparable — arrange a glass replacement",
-  recReplaced: "glass replaced — done",
 };
 const ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "insurance_reported", "note"];
 const WHERE_TYPES = { repaired: 1, repair_planned: 1 };
