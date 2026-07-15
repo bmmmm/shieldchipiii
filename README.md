@@ -73,6 +73,11 @@ terminal.
   pristine device the dialog offers a single *Take over* instead, and a toast
   sums up what a merge did ("1 entry new · 1 deletion kept").
 - **Backup** — export/import JSON, or copy the diagram as ASCII art.
+- **Works offline** — a service worker precaches the app shell, so once
+  visited the app starts with no signal (the place you find chips is a
+  parking deck). Install it to the home screen for an app icon and a
+  standalone window. Updates arrive one start later — the shell is served
+  cache-first; the data itself never needed the network to begin with.
 - **Terminal client** — the same data, rendered as ASCII in your shell.
 - **Community car models** — tweaked the shape to match your car? Click
   *Propose as car model* (under shape tweaking) to open a prefilled
@@ -87,8 +92,9 @@ Tests: `node test/smoke.js` and `node test/touch-targets.js` — no
 dependencies there either. CI runs both on every push.
 
 Releasing: run `scripts/stamp-assets.sh` first — it stamps the asset URLs in
-`index.html` with the current commit hash, so browsers can't mix cached old
-modules with a fresh deploy (the smoke test fails on inconsistent stamps).
+`index.html` and the service worker's cache (`sw.js`) with the current commit
+hash, so browsers can't mix cached old modules with a fresh deploy (the smoke
+test fails on inconsistent stamps or a precache list that drifts).
 
 ## Terminal
 

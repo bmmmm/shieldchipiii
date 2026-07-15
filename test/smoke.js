@@ -648,6 +648,20 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.ok(!stamps.has(undefined) && stamps.size === 1,
     "local assets carry " + JSON.stringify(Array.from(stamps)) + " as cache stamps — run scripts/stamp-assets.sh");
 
+  // --- the offline shell precaches exactly what index.html loads ---
+  // A module added to index.html but not to sw.js works online and breaks
+  // offline — the one place this app is for. Same stamp, same file set.
+  const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
+  const swStamp = (sw.match(/^var STAMP = "([^"]+)";/m) || [])[1];
+  assert.strictEqual(swStamp, Array.from(stamps)[0],
+    "sw.js is stamped " + swStamp + " but index.html carries " + Array.from(stamps)[0] + " — run scripts/stamp-assets.sh");
+  const swFiles = new Set(Array.from(sw.matchAll(/"([^"]+\.(?:js|css))"/g)).map((m) => m[1]));
+  const htmlFiles = new Set(assetUrls.map((u) => u.split("?")[0]));
+  htmlFiles.forEach((f) => assert.ok(swFiles.has(f),
+    "index.html loads " + f + " but sw.js doesn't precache it — offline would break"));
+  swFiles.forEach((f) => assert.ok(htmlFiles.has(f),
+    "sw.js precaches " + f + ", which index.html doesn't load"));
+
   // --- every translation key the UI asks for has text in both languages ---
   const wanted = new Set();
   Array.from(html.matchAll(/data-i18n(?:-ph)?="([^"]+)"/g)).forEach((m) => wanted.add(m[1]));

@@ -847,4 +847,10 @@
   // ---------- boot ----------
   rerenderAll();
   handleHash();
+
+  // Offline shell: best effort, never in the way. file:// has no worker and
+  // stays a supported way to open the app, so failure is silence, not a toast.
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
 })();
