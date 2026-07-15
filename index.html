@@ -69,14 +69,33 @@
 
     <section class="share">
       <h2 data-i18n="share"></h2>
-      <div class="row">
-        <button id="copyLink" data-i18n="copyLink"></button>
-        <button id="copyAscii" data-i18n="copyAscii"></button>
-        <button id="exportJson" data-i18n="exportJson"></button>
-        <label class="filebtn"><span data-i18n="importJson"></span><input id="importJson" type="file" accept=".json,application/json"></label>
+      <div class="sync-grid">
+        <div class="sync-card">
+          <h3 data-i18n="deviceSync"></h3>
+          <p id="shareStats" class="muted sync-stats"></p>
+          <div id="qrTile" class="qr-tile"></div>
+          <p id="qrCapacity" class="qr-capacity"></p>
+          <p id="shareUrlRead" class="muted mono share-url"></p>
+          <button id="copyLink" class="primary" data-i18n="copyLink"></button>
+        </div>
+        <div class="sync-card">
+          <h3 data-i18n="backup"></h3>
+          <div class="backup-item">
+            <button id="exportJson" data-i18n="exportJson"></button>
+            <p class="muted sync-desc" data-i18n="exportJsonDesc"></p>
+          </div>
+          <div class="backup-item">
+            <label class="filebtn"><span data-i18n="importJson"></span><input id="importJson" type="file" accept=".json,application/json"></label>
+            <p class="muted sync-desc" data-i18n="importJsonDesc"></p>
+          </div>
+          <div class="backup-item">
+            <button id="copyAscii" data-i18n="copyAscii"></button>
+            <p class="muted sync-desc" data-i18n="copyAsciiDesc"></p>
+          </div>
+        </div>
       </div>
-      <p class="muted" data-i18n="shareNote"></p>
-      <p class="muted mono" data-i18n="terminalNote"></p>
+      <p class="muted sync-note" data-i18n="shareNote"></p>
+      <p class="muted mono sync-note" data-i18n="terminalNote"></p>
     </section>
 
     <section class="rule">
@@ -91,16 +110,19 @@
   </main>
 
   <div id="importOverlay" class="overlay" hidden>
-    <div class="dialog">
-      <h2 data-i18n="importTitle"></h2>
-      <p id="importSummary"></p>
-      <div class="row">
-        <button id="importMerge" data-i18n="importMerge"></button>
+    <div class="dialog import-dialog">
+      <h2 id="importTitle"></h2>
+      <ul id="importPreview" class="import-preview"></ul>
+      <p id="importHint" class="muted import-hint"></p>
+      <div class="import-actions">
+        <button id="importMerge" class="primary"></button>
         <button id="importReplace" class="danger" data-i18n="importReplace"></button>
         <button id="importCancel" class="ghost" data-i18n="importCancel"></button>
       </div>
     </div>
   </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <footer>
     <span data-i18n="footerLocal"></span> ·
@@ -117,6 +139,7 @@
   <script src="js/store.js"></script>
   <script src="js/share.js"></script>
   <script src="js/render.js"></script>
+  <script src="js/qr.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

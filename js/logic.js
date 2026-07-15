@@ -204,6 +204,20 @@
 
   function clamp01(v) { return Math.min(1, Math.max(0, Number(v))); }
 
+  // A tombstone map — chip id or car id -> ISO deletion time — is as untrusted
+  // as everything else off a share link. Keep only string ids and string stamps
+  // within the same caps the fields use, and drop the rest outright: a truncated
+  // id would match no entity and haunt every future merge. Always a plain map.
+  function cleanGone(gone) {
+    if (!gone || typeof gone !== "object" || Array.isArray(gone)) return {};
+    var out = {};
+    Object.keys(gone).forEach(function (id) {
+      var ts = gone[id];
+      if (id.length <= MAX.id && typeof ts === "string" && ts.length <= MAX.up) out[id] = ts;
+    });
+    return out;
+  }
+
   // Shape/adjust aren't checked here — geometry belongs to shapes.js, and
   // paramsFor() clamps every value it takes from `adjust` anyway. Country is
   // the same deal: sources.normalize() decides what's a country we have
@@ -218,6 +232,7 @@
       wheel: car.wheel === "right" ? "right" : "left",
       country: cleanText(car.country, MAX.country).toLowerCase(),
       chips: (Array.isArray(car.chips) ? car.chips : []).map(normalizeChip).filter(Boolean),
+      gone: cleanGone(car.gone),
       up: cleanText(car.up, MAX.up),
     };
   }
@@ -233,6 +248,6 @@
     lastEventOfType: lastEventOfType, insuranceReported: insuranceReported,
     foundDate: foundDate, recommend: recommend, makeEvent: makeEvent, uid: uid,
     pendingCount: pendingCount, chipLoad: chipLoad,
-    normalizeChip: normalizeChip, normalizeCars: normalizeCars,
+    normalizeChip: normalizeChip, normalizeCars: normalizeCars, cleanGone: cleanGone,
   };
 });

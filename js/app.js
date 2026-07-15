@@ -3,8 +3,15 @@
   "use strict";
   var store = window.SC.store, shapes = window.SC.shapes, render = window.SC.render;
   var share = window.SC.share, i18n = window.SC.i18n, ascii = window.SC.ascii, logic = window.SC.logic;
-  var sources = window.SC.sources;
+  var sources = window.SC.sources, qr = window.SC.qr;
   var t = i18n.t;
+
+  // A count with its noun, pluralized by picking a form from a "one|many"
+  // dictionary value — German plurals are irregular, so t() can't derive them.
+  function plur(key, n) {
+    var forms = t(key).split("|");
+    return (n === 1 ? forms[0] : forms[forms.length - 1]).replace("{n}", n);
+  }
 
   var state = store.load();
   var selectedId = null;
@@ -44,7 +51,7 @@
 
   function car() { return store.activeCar(state); }
   function chipById(id) { return car().chips.find(function (k) { return k.id === id; }); }
-  function persist() { store.save(state); }
+  function persist() { store.save(state); scheduleShare(); }
   function touchCar() { car().up = store.now(); }
   function today() { return new Date().toISOString().slice(0, 10); }
   function esc(s) { return render.esc(s); }
@@ -194,6 +201,7 @@
     renderCarForm();
     renderWindshield();
     renderChipTable();
+    renderShare();
   }
 
   // ---------- marker popup ----------
@@ -315,7 +323,10 @@
     if (kind === "close") { closePopup(); return; }
     if (kind === "delChip") {
       if (!confirm(t("confirmDeleteChip"))) return;
-      car().chips = car().chips.filter(function (k) { return k.id !== selectedId; });
+      var c = car();
+      c.gone = c.gone || {};
+      c.gone[selectedId] = store.now(); // tombstone so a later merge can't resurrect it
+      c.chips = c.chips.filter(function (k) { return k.id !== selectedId; });
       touchCar();
       persist();
       closePopup();
@@ -443,7 +454,11 @@
 
   $("glassSwap").addEventListener("click", function () {
     if (!confirm(t("confirmGlassSwap", { count: car().chips.length }))) return;
-    car().chips = [];
+    var c = car();
+    c.gone = c.gone || {};
+    var ts = store.now(); // one deletion moment for the whole pane
+    c.chips.forEach(function (k) { c.gone[k.id] = ts; });
+    c.chips = [];
     touchCar();
     closePopup();
     persist();
@@ -452,7 +467,10 @@
 
   $("deleteCar").addEventListener("click", function () {
     if (!confirm(t("confirmDeleteCar"))) return;
-    state.cars = state.cars.filter(function (c) { return c.id !== car().id; });
+    var gid = car().id;
+    state.gone = state.gone || {};
+    state.gone[gid] = store.now(); // tombstone the car for later merges
+    state.cars = state.cars.filter(function (c) { return c.id !== gid; });
     if (!state.cars.length) state.cars.push(store.newCar(""));
     state.activeCar = state.cars[0].id;
     closePopup();
@@ -575,7 +593,7 @@
     if (await copyText(ascii.renderAscii(car()))) flash(this, "copied");
   });
   $("exportJson").addEventListener("click", function () {
-    var blob = new Blob([JSON.stringify({ v: 1, cars: state.cars }, null, 2)], { type: "application/json" });
+    var blob = new Blob([JSON.stringify({ v: 1, cars: state.cars, gone: state.gone }, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     var url = URL.createObjectURL(blob);
     a.href = url;
@@ -593,21 +611,107 @@
     reader.onload = function () {
       var incoming = null;
       try { incoming = store.sanitize(JSON.parse(reader.result)); } catch (e) { /* handled below */ }
-      if (!incoming) { alert(t("importFileBroken")); return; }
+      if (!incoming) { toast(t("importFileBroken"), "danger"); return; }
       showImportDialog(incoming);
     };
     reader.readAsText(file);
   });
 
-  // ---------- import via URL hash ----------
+  // ---------- share panel (QR + live indicators) ----------
+
+  // The panel mirrors the whole state, so it re-renders on every mutation
+  // (debounced via persist — a slider drag calls persist many times) and once
+  // directly from rerenderAll. shareUrl is async: a sequence counter drops a
+  // stale resolve that lands after a newer one.
+  var QR_MAX = 2953; // ECC L, version 40 byte capacity (payload is ASCII, so bytes == chars)
+  var shareSeq = 0, shareTimer = null;
+
+  function scheduleShare() {
+    if (shareTimer) clearTimeout(shareTimer);
+    shareTimer = setTimeout(renderShare, 250);
+  }
+
+  function renderShare() {
+    var seq = ++shareSeq;
+    var snap = state;
+    share.shareUrl(snap).then(function (url) {
+      if (seq !== shareSeq) return; // a newer render already superseded this one
+      var carsN = snap.cars.length;
+      var chipsN = snap.cars.reduce(function (n, c) { return n + c.chips.length; }, 0);
+      var kb = (url.length / 1024).toFixed(1);
+      $("shareStats").textContent = plur("nVehicles", carsN) + " · " + plur("nEntries", chipsN) + " · " + kb + " kB";
+      $("shareUrlRead").textContent = url;
+
+      var svgStr = null;
+      if (url.length <= QR_MAX) { try { svgStr = qr.svg(url); } catch (e) { svgStr = null; } }
+      var tile = $("qrTile");
+      tile.innerHTML = svgStr || "";
+      tile.hidden = !svgStr;
+      var cap = $("qrCapacity");
+      cap.textContent = svgStr ? t("qrFits") : t("qrTooBig");
+      cap.className = "qr-capacity " + (svgStr ? "cap-ok" : "cap-danger");
+    });
+  }
+
+  // ---------- toast ----------
+
+  // One reusable bottom-centre banner, polite live region, auto-hides.
+  var toastTimer = null;
+  function toast(msg, kind) {
+    var el = $("toast");
+    el.textContent = msg;
+    el.className = "toast toast-" + (kind === "danger" ? "danger" : "ok");
+    el.hidden = false;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.hidden = true; }, 4000);
+  }
+
+  // ---------- import dialog + URL hash ----------
+
+  // A brand-new install is exactly the default state: one unnamed, empty car and
+  // no tombstones. Merging into it would leave that empty car beside the imported
+  // ones (and still active), so the import reads as a failure — hence a single
+  // "take over" (replace) on first setup.
+  function isPristine(s) {
+    if (s.cars.length !== 1) return false;
+    var c = s.cars[0];
+    if (c.name || c.chips.length) return false;
+    if (s.gone && Object.keys(s.gone).length) return false;
+    if (c.gone && Object.keys(c.gone).length) return false;
+    return true;
+  }
 
   function showImportDialog(incoming) {
-    var chips = incoming.cars.reduce(function (n, c) { return n + c.chips.length; }, 0);
-    $("importSummary").textContent = t("importSummary", { cars: incoming.cars.length, chips: chips });
-    $("importOverlay").hidden = false;
-    $("importMerge").onclick = function () { state = store.merge(state, incoming); finishImport(); };
-    $("importReplace").onclick = function () { incoming.activeCar = incoming.cars[0].id; state = incoming; finishImport(); };
+    var first = isPristine(state);
+    $("importTitle").textContent = first ? t("importTitleFirst") : t("importTitle");
+
+    var shown = incoming.cars.slice(0, 6).map(function (c) {
+      return "<li>" + esc(c.name || "🚗") + " · " + plur("nEntries", c.chips.length) + "</li>";
+    });
+    if (incoming.cars.length > 6) {
+      shown.push('<li class="import-more">' + t("importMore").replace("{n}", incoming.cars.length - 6) + "</li>");
+    }
+    $("importPreview").innerHTML = shown.join("");
+
+    var merge = $("importMerge"), replace = $("importReplace");
+    replace.hidden = first;
+    merge.textContent = first ? t("importTakeover") : t("importMerge");
+    $("importHint").textContent = first ? t("importTakeoverHint") : t("importMergeHint");
+    merge.onclick = first
+      ? function () { doReplace(incoming); }
+      : function () { var r = store.merge(state, incoming); state = r.state; finishImport(); toastStats(r.stats); };
+    replace.onclick = function () { doReplace(incoming); };
     $("importCancel").onclick = function () { $("importOverlay").hidden = true; };
+    $("importOverlay").hidden = false;
+
+    function doReplace(inc) {
+      var carsN = inc.cars.length;
+      var chipsN = inc.cars.reduce(function (n, c) { return n + c.chips.length; }, 0);
+      inc.activeCar = inc.cars[0].id;
+      state = inc;
+      finishImport();
+      toast(t("replaceDone") + " " + plur("nVehicles", carsN) + ", " + plur("nEntries", chipsN), "ok");
+    }
     function finishImport() {
       $("importOverlay").hidden = true;
       closePopup();
@@ -617,12 +721,26 @@
     }
   }
 
+  // The merge stats become a toast of only the parts that actually happened;
+  // blocked + removed are both deletions that stuck, so they read as one honest
+  // "deletion kept". An all-zero merge says so rather than an empty "Imported:".
+  function toastStats(stats) {
+    var parts = [];
+    if (stats.cars) parts.push(plur("statCars", stats.cars));
+    if (stats.added) parts.push(plur("statAdded", stats.added));
+    if (stats.updated) parts.push(plur("statUpdated", stats.updated));
+    if (stats.events) parts.push(plur("statEvents", stats.events));
+    var del = (stats.blocked || 0) + (stats.removed || 0);
+    if (del) parts.push(plur("statDeletions", del));
+    toast(parts.length ? t("importDone") + " " + parts.join(" · ") : t("importNothing"), "ok");
+  }
+
   async function handleHash() {
     var hash = location.hash;
     if (!/^#[ij]:/.test(hash)) return;
     history.replaceState(null, "", location.pathname + location.search);
     try { showImportDialog(await share.decodeToken(hash)); }
-    catch (e) { alert(t("importBroken")); }
+    catch (e) { toast(t("importBroken"), "danger"); }
   }
   window.addEventListener("hashchange", handleHash);
 

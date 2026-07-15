@@ -87,7 +87,7 @@ function decodeToken(token) {
 }
 
 function encodeToken(state) {
-  const json = JSON.stringify({ v: 1, cars: state.cars });
+  const json = JSON.stringify({ v: 1, cars: state.cars, gone: state.gone });
   return "i:" + zlib.gzipSync(Buffer.from(json, "utf8"), { level: 9 }).toString("base64url");
 }
 
@@ -107,7 +107,7 @@ function loadState(src) {
   if (!state || state.v !== 1) throw new Error("not a shieldchipiii payload");
   const cars = logic.normalizeCars(state.cars);
   if (!cars.length) throw new Error("no usable vehicle in the payload");
-  return { v: 1, cars };
+  return { v: 1, cars, gone: logic.cleanGone(state.gone) };
 }
 
 // ---------- output ----------
@@ -210,7 +210,7 @@ function emit(state, flags) {
   const token = encodeToken(state);
   const base = flags.base || process.env.SHIELDCHIPIII_BASE;
   if (flags.out) {
-    fs.writeFileSync(flags.out, JSON.stringify({ v: 1, cars: state.cars }, null, 2) + "\n");
+    fs.writeFileSync(flags.out, JSON.stringify({ v: 1, cars: state.cars, gone: state.gone }, null, 2) + "\n");
     console.log("wrote " + flags.out);
   }
   console.log(base ? String(base).replace(/#.*$/, "") + "#" + token : "#" + token);
@@ -333,7 +333,7 @@ function main() {
       break;
     }
     case "decode":
-      console.log(JSON.stringify({ v: 1, cars: state.cars }, null, 2));
+      console.log(JSON.stringify({ v: 1, cars: state.cars, gone: state.gone }, null, 2));
       break;
     case "encode":
       emit(state, flags);

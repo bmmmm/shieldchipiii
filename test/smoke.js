@@ -25,7 +25,7 @@ const sandbox = {
 sandbox.window = sandbox; sandbox.self = sandbox;
 vm.createContext(sandbox);
 
-["shapes", "sources", "logic", "ascii", "i18n", "store", "share", "render"].forEach((m) => {
+["shapes", "sources", "logic", "ascii", "i18n", "store", "share", "render", "qr"].forEach((m) => {
   vm.runInContext(fs.readFileSync(path.join(root, "js", m + ".js"), "utf8"), sandbox, { filename: m + ".js" });
 });
 const SC = sandbox.SC;
@@ -345,6 +345,20 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.ok(SC.i18n.t("evRepaired").length > 0);
   assert.ok(SC.i18n.t("recReplaceCrack").length > 0, "every recommendation key has text");
 
+  // --- QR encoder is pure data: no DOM, byte mode, throws past capacity ---
+  // qr.js loads in this headless sandbox for the same reason the app can build a
+  // code without a DOM — it touches none. Guards the script-order assumption
+  // (qr.js before app.js) from the data side.
+  const url600 = "https://example.com/index.html#i:" + "A".repeat(567); // a ~600-char share URL
+  const svg600 = SC.qr.svg(url600);
+  assert.ok(svg600.startsWith("<svg") && svg600.includes('fill="#fff"') && svg600.includes('fill="#000"'),
+    "qr.svg builds a white-background, black-module SVG string");
+  const qrEnc = SC.qr.encode("hello");
+  assert.ok(qrEnc.size > 0 && Array.isArray(qrEnc.modules) && qrEnc.modules.length === qrEnc.size,
+    "qr.encode returns a square module matrix");
+  assert.throws(() => SC.qr.svg("A".repeat(3000)), /too long/,
+    "a payload past the version-40 byte capacity throws");
+
   // --- share encode/decode + interop with zlib (CLI) ---
   const token = await SC.share.encodeState(state);
   assert.ok(token.startsWith("i:"));
@@ -355,28 +369,165 @@ const hasCtrl = (s) => Array.from(String(s))
   const cliToken = "i:" + zlib.gzipSync(Buffer.from(JSON.stringify({ v: 1, cars: state.cars }))).toString("base64url");
   assert.strictEqual((await SC.share.decodeToken(cliToken)).cars[0].name, "Golf 7");
 
-  // --- merge unions events by id, never loses history ---
+  // --- merge unions events by id, never loses history; returns { state, stats } ---
   const remote = JSON.parse(JSON.stringify({ v: 1, cars: state.cars }));
   remote.cars[0].chips[0].events.push(SC.logic.makeEvent("irreparable", "2026-08-01"));
   remote.cars[0].chips[0].up = "2999-01-01T00:00:00.000Z";
-  const merged = SC.store.merge(JSON.parse(JSON.stringify(reloaded)), remote);
+  const mergeRes = SC.store.merge(JSON.parse(JSON.stringify(reloaded)), remote);
+  const merged = mergeRes.state;
   assert.strictEqual(merged.cars[0].chips[0].events.length, 5, "event unioned in");
   assert.strictEqual(SC.logic.currentStatus(merged.cars[0].chips[0]), "irreparable");
+  assert.strictEqual(mergeRes.stats.events, 1, "the one appended event is counted");
+  assert.strictEqual(mergeRes.stats.updated, 1, "the field-refreshed chip is counted");
 
   // --- a merge that appends an OLDER event must not rewind the status ---
   // Regression: merge pushes remote events onto the end, so insertion order
   // made whatever the other device sent last win regardless of its date.
   const stale = JSON.parse(JSON.stringify({ v: 1, cars: merged.cars }));
   stale.cars[0].chips[0].events.push(SC.logic.makeEvent("observing", "2026-01-05"));
-  const merged3 = SC.store.merge(JSON.parse(JSON.stringify(merged)), stale);
+  const merged3 = SC.store.merge(JSON.parse(JSON.stringify(merged)), stale).state;
   assert.strictEqual(SC.logic.currentStatus(merged3.cars[0].chips[0]), "irreparable",
     "an older event merged in last must not become the current status");
 
   // --- merge adds unknown chip ---
   const remote2 = JSON.parse(JSON.stringify({ v: 1, cars: state.cars }));
   remote2.cars[0].chips.push({ id: "k_new", x: 0.1, y: 0.1, size: "c10", fov: false, events: [SC.logic.makeEvent("new", "2026-01-01")], up: "2026-01-01" });
-  const merged2 = SC.store.merge(JSON.parse(JSON.stringify(merged)), remote2);
-  assert.strictEqual(merged2.cars[0].chips.length, 2);
+  const merged2Res = SC.store.merge(JSON.parse(JSON.stringify(merged)), remote2);
+  assert.strictEqual(merged2Res.state.cars[0].chips.length, 2);
+  assert.strictEqual(merged2Res.stats.added, 1, "the new chip is counted as added");
+
+  // --- tombstone-based deletion survives a merge of an older remote ---
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const T1 = "2026-01-01T00:00:00.000Z"; // oldest
+  const T2 = "2026-06-01T00:00:00.000Z";
+  const T3 = "2026-12-01T00:00:00.000Z"; // newest
+  const mkChip = (id, up) => ({ id, x: 0.5, y: 0.5, size: "c10", up, events: [SC.logic.makeEvent("new", "2026-01-01")] });
+  const mkCar = (id, chips, gone, up) => ({ id, name: id, shape: "sedan", adjust: null, wheel: "left", country: "de", chips, gone: gone || {}, up: up || T2 });
+
+  // a chip deleted locally is not resurrected by an older remote copy of it
+  const localDel = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [], { kX: T3 })] };
+  const remoteOld = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [mkChip("kX", T1)], {})] };
+  const rDel = SC.store.merge(clone(localDel), clone(remoteOld));
+  assert.strictEqual(rDel.state.cars[0].chips.length, 0, "a locally deleted chip stays deleted against an older remote");
+  assert.strictEqual(rDel.stats.blocked, 1, "the blocked chip is counted");
+
+  // a glass swap tombstones every chip on the pane, and they stay gone
+  const swapped = { v: 1, activeCar: "cB", gone: {}, cars: [mkCar("cB", [], { kX: T3, kY: T3 })] };
+  const remoteSwap = { v: 1, activeCar: "cB", gone: {}, cars: [mkCar("cB", [mkChip("kX", T1), mkChip("kY", T2)], {})] };
+  const rSwap = SC.store.merge(clone(swapped), clone(remoteSwap));
+  assert.strictEqual(rSwap.state.cars[0].chips.length, 0, "chips cleared by a glass swap stay gone against an older share");
+  assert.strictEqual(rSwap.stats.blocked, 2);
+
+  // a deleted car (state.gone) is not resurrected by an older remote copy
+  const carDel = { v: 1, activeCar: "cB", gone: { cA: T3 }, cars: [mkCar("cB", [], {})] };
+  const remoteHasA = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [mkChip("kX", T1)], {}, T1), mkCar("cB", [], {})] };
+  const rCarDel = SC.store.merge(clone(carDel), clone(remoteHasA));
+  assert.ok(!rCarDel.state.cars.some((c) => c.id === "cA"), "a deleted car stays deleted against an older remote");
+  assert.strictEqual(rCarDel.stats.blocked, 1, "the blocked car is counted");
+
+  // a remote tombstone newer than the last local car buries it, yet the state
+  // is never left car-less — a fresh empty car takes its place and is active
+  const lastCar = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [], {}, T1)] };
+  const remoteKills = { v: 1, activeCar: "cA", gone: { cA: T3 }, cars: [] };
+  const rLast = SC.store.merge(clone(lastCar), clone(remoteKills));
+  assert.strictEqual(rLast.state.cars.length, 1, "removing the last car leaves a fresh one");
+  assert.strictEqual(rLast.state.cars[0].chips.length, 0, "the replacement car is empty");
+  assert.notStrictEqual(rLast.state.cars[0].id, "cA", "and it is a new car, not the buried one");
+  assert.strictEqual(rLast.state.activeCar, rLast.state.cars[0].id, "activeCar points at the surviving car");
+  assert.strictEqual(rLast.stats.removed, 1, "the removed car is counted");
+
+  // when the active car is buried but others remain, active moves to a survivor
+  const twoCars = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [], {}, T1), mkCar("cB", [], {}, T1)] };
+  const killA = { v: 1, activeCar: "cA", gone: { cA: T3 }, cars: [] };
+  const rTwo = SC.store.merge(clone(twoCars), clone(killA));
+  assert.strictEqual(rTwo.state.cars.length, 1, "only the buried car is removed");
+  assert.strictEqual(rTwo.state.cars[0].id, "cB", "the other car remains");
+  assert.strictEqual(rTwo.state.activeCar, "cB", "active moves to the surviving car");
+  assert.strictEqual(rTwo.stats.removed, 1);
+
+  // a chip re-edited AFTER a tombstone elsewhere (up newer than the stamp)
+  // survives, and the outlived tombstone is healed away so it can't linger
+  const localFresh = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [mkChip("kX", T3)], {})] };
+  const remoteTomb = { v: 1, activeCar: "cA", gone: {}, cars: [mkCar("cA", [], { kX: T1 })] };
+  const rHeal = SC.store.merge(clone(localFresh), clone(remoteTomb));
+  assert.strictEqual(rHeal.state.cars[0].chips.length, 1, "a chip re-edited after its deletion survives");
+  assert.strictEqual(rHeal.state.cars[0].chips[0].id, "kX");
+  assert.ok(!("kX" in rHeal.state.cars[0].gone), "and the outlived chip tombstone is healed away");
+  assert.strictEqual(rHeal.stats.removed, 0);
+
+  // the same healing applies to a car-level tombstone the car has outlived
+  const carHeal = { v: 1, activeCar: "cA", gone: { cA: T1 }, cars: [mkCar("cA", [], {}, T3)] };
+  const rCarHeal = SC.store.merge(clone(carHeal), { v: 1, activeCar: "cA", gone: {}, cars: [] });
+  assert.ok(rCarHeal.state.cars.some((c) => c.id === "cA"), "a car re-edited after its deletion survives");
+  assert.ok(!("cA" in rCarHeal.state.gone), "and its outlived car tombstone is healed");
+
+  // stats count exactly what happened across one representative merge
+  const ev = (type, date, id) => { const e = SC.logic.makeEvent(type, date); if (id) e.id = id; return e; };
+  const gLocal = {
+    v: 1, activeCar: "cA", gone: {},
+    cars: [{
+      id: "cA", name: "A", shape: "sedan", adjust: null, wheel: "left", country: "de", up: T2,
+      gone: { kBlk: T3 }, // blocks an older remote kBlk from reappearing
+      chips: [
+        { id: "k1", x: 0.2, y: 0.2, size: "c10", up: T2, events: [ev("new", "2026-01-01", "e_k1")] },
+        { id: "k2", x: 0.3, y: 0.3, size: "c10", up: T2, events: [ev("new", "2026-01-01", "e_k2")] },
+        { id: "k3", x: 0.4, y: 0.4, size: "c10", up: T2, events: [ev("new", "2026-01-01", "e_k3")] },
+      ],
+    }],
+  };
+  const gRemote = clone(gLocal);
+  gRemote.cars.push({ id: "cNew", name: "N", shape: "sedan", adjust: null, wheel: "left", country: "de", up: T2, gone: {}, chips: [] }); // +1 car
+  gRemote.cars[0].chips[0].up = T3; gRemote.cars[0].chips[0].x = 0.9; // k1 field-refreshed -> updated
+  gRemote.cars[0].chips[1].events.push(ev("observing", "2026-02-01", "e_k2b")); // k2 +1 event
+  gRemote.cars[0].chips.splice(2, 1); // drop k3 from remote's chips...
+  gRemote.cars[0].gone = { k3: T3 }; // ...and bury it -> removed locally
+  gRemote.cars[0].chips.push({ id: "k4", x: 0.5, y: 0.5, size: "c10", up: T2, events: [ev("new", "2026-01-01", "e_k4")] }); // +1 chip
+  gRemote.cars[0].chips.push({ id: "kBlk", x: 0.6, y: 0.6, size: "c10", up: T1, events: [ev("new", "2026-01-01", "e_kBlk")] }); // blocked
+  const rStats = SC.store.merge(clone(gLocal), gRemote).stats;
+  // Field by field, not deepStrictEqual: the stats object is built inside the
+  // module sandbox, so its prototype differs from a literal here — a whole-object
+  // compare would trip on that alone. Same reason keys are checked via Object.keys.
+  assert.strictEqual(rStats.cars, 1, "one new car added");
+  assert.strictEqual(rStats.added, 1, "one new chip added to an existing car");
+  assert.strictEqual(rStats.updated, 1, "one chip's fields refreshed");
+  assert.strictEqual(rStats.events, 1, "one event appended to an existing chip");
+  assert.strictEqual(rStats.blocked, 1, "one remote entity blocked by a local tombstone");
+  assert.strictEqual(rStats.removed, 1, "one local entity removed by a remote tombstone");
+
+  // --- gone survives every serialization path (share round-trip + CLI zlib) ---
+  const goneState = SC.store.defaultState();
+  goneState.gone = { deadCar: T2 };
+  goneState.cars[0].gone = { deadChip: T3 };
+  const goneTok = await SC.share.encodeState(goneState);
+  const goneDec = await SC.share.decodeToken("#" + goneTok);
+  assert.strictEqual(goneDec.gone.deadCar, T2, "state-level tombstone survives the share round-trip");
+  assert.strictEqual(goneDec.cars[0].gone.deadChip, T3, "per-car tombstone survives too");
+  const viaZlibGone = JSON.parse(zlib.gunzipSync(Buffer.from(goneTok.slice(2), "base64url")).toString("utf8"));
+  assert.strictEqual(viaZlibGone.gone.deadCar, T2, "the CLI zlib decode path sees the state tombstone");
+  assert.strictEqual(viaZlibGone.cars[0].gone.deadChip, T3, "and the per-car tombstone");
+
+  // --- sanitize / normalizeCar drop junk gone entries ---
+  const dirty = SC.store.sanitize({
+    v: 1, activeCar: "c1",
+    gone: { goodCar: T1, badNum: 12345, badLong: "x".repeat(40) },
+    cars: [{ id: "c1", chips: [], gone: { goodChip: T2, badVal: {} } }],
+  });
+  assert.strictEqual(dirty.gone.goodCar, T1, "a valid state tombstone is kept");
+  assert.ok(!("badNum" in dirty.gone), "a non-string stamp is dropped");
+  assert.ok(!("badLong" in dirty.gone), "an over-length stamp is dropped");
+  assert.strictEqual(dirty.cars[0].gone.goodChip, T2, "a valid car tombstone is kept");
+  assert.ok(!("badVal" in dirty.cars[0].gone), "a non-string car stamp is dropped");
+  const bigKey = {}; bigKey["k_" + "x".repeat(60)] = T1;
+  assert.deepStrictEqual(Object.keys(SC.store.sanitize({ v: 1, activeCar: "c1", gone: bigKey, cars: [{ id: "c1", chips: [] }] }).gone), [],
+    "an over-length id is dropped");
+  assert.deepStrictEqual(Object.keys(SC.store.sanitize({ v: 1, activeCar: "c1", gone: "nope", cars: [{ id: "c1", chips: [] }] }).gone), [],
+    "a non-object gone defaults to empty");
+  assert.deepStrictEqual(Object.keys(SC.store.sanitize({ v: 1, activeCar: "c1", gone: ["a"], cars: [{ id: "c1", chips: [] }] }).gone), [],
+    "an array is not a tombstone map");
+  assert.deepStrictEqual(Object.keys(SC.logic.normalizeCars([{ id: "c", chips: [] }])[0].gone), [], "a car with no gone gets an empty map");
+  const carJunk = SC.logic.normalizeCars([{ id: "c", chips: [], gone: { ok: T1, bad: 7 } }])[0].gone;
+  assert.deepStrictEqual(Object.keys(carJunk), ["ok"], "normalizeCar drops junk car tombstones and keeps valid ones");
+  assert.strictEqual(carJunk.ok, T1, "the valid car tombstone keeps its stamp");
 
   // --- tapping a marker on a phone ---
   // The reason this exists: the drawn hit circles are viewBox units and the SVG

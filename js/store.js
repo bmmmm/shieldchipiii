@@ -22,7 +22,7 @@
   function newCar(name, country) {
     return {
       id: logic.uid("c_"), name: name || "", shape: "sedan", adjust: null, wheel: "left",
-      country: country || guessCountry(), chips: [], up: now(),
+      country: country || guessCountry(), chips: [], gone: {}, up: now(),
     };
   }
 
@@ -40,7 +40,7 @@
 
   function defaultState() {
     var car = newCar("");
-    return { v: 1, cars: [car], activeCar: car.id };
+    return { v: 1, cars: [car], activeCar: car.id, gone: {} };
   }
 
   // Vet a whole state — from localStorage, a file, or a share link. The cars
@@ -50,7 +50,7 @@
     if (!state || state.v !== 1) return null;
     var cars = logic.normalizeCars(state.cars);
     if (!cars.length) return null;
-    return { v: 1, cars: cars, activeCar: state.activeCar };
+    return { v: 1, cars: cars, activeCar: state.activeCar, gone: logic.cleanGone(state.gone) };
   }
 
   function load() {
@@ -72,27 +72,94 @@
     return state.cars.find(function (c) { return c.id === state.activeCar; }) || state.cars[0];
   }
 
-  // Merge remote into local: union by id, newer `up` wins per entity. Chip
-  // events are unioned by event id so a timeline never loses history on merge.
+  // Two devices' tombstone maps reconcile to the newest deletion per id.
+  function unionGone(a, b) {
+    var out = {};
+    [a || {}, b || {}].forEach(function (m) {
+      Object.keys(m).forEach(function (id) { if (!out[id] || m[id] > out[id]) out[id] = m[id]; });
+    });
+    return out;
+  }
+
+  // A tombstone outranks an entity only when strictly newer than its last touch
+  // — a tie leaves the entity standing, the same "existing wins" rule the field
+  // merges use.
+  function tombNewer(ts, up) { return (ts || "") > (up || ""); }
+
+  // A tombstone an entity has since outlived (re-edited after the deletion
+  // elsewhere) is stale — drop it so a later merge can't read it as a fresh kill.
+  function heal(gone, id, up) { if (gone[id] && (up || "") > gone[id]) delete gone[id]; }
+
+  // Merge remote into local: union by id, newer `up` wins per entity, chip
+  // events unioned by event id so a timeline never loses history. Deletions
+  // travel as tombstones (state.gone -> carId, car.gone -> chipId): a newer
+  // tombstone blocks a stale remote copy from resurrecting and buries a local
+  // entity the other device has since deleted. Returns { state, stats }, where
+  // state is `local` mutated in place and stats feed the import summary.
   function merge(local, remote) {
+    var stats = { cars: 0, added: 0, updated: 0, events: 0, blocked: 0, removed: 0 };
+
+    // (a) Reconcile what's been deleted before deciding what to keep.
+    local.gone = unionGone(local.gone, remote.gone);
+
     remote.cars.forEach(function (rc) {
       var lc = local.cars.find(function (c) { return c.id === rc.id; });
-      if (!lc) { local.cars.push(rc); return; }
+      if (!lc) {
+        // (b) A car we buried must not return via an older remote copy.
+        if (tombNewer(local.gone[rc.id], rc.up)) { stats.blocked++; return; }
+        local.cars.push(rc);
+        stats.cars++;
+        return;
+      }
+      lc.gone = unionGone(lc.gone, rc.gone);
       if ((rc.up || "") > (lc.up || "")) {
         ["name", "shape", "adjust", "wheel", "country", "up"].forEach(function (f) { lc[f] = rc[f]; });
       }
       rc.chips.forEach(function (rk) {
         var lk = lc.chips.find(function (k) { return k.id === rk.id; });
-        if (!lk) { lc.chips.push(rk); return; }
+        if (!lk) {
+          if (tombNewer(lc.gone[rk.id], rk.up)) { stats.blocked++; return; }
+          lc.chips.push(rk);
+          stats.added++;
+          return;
+        }
         if ((rk.up || "") > (lk.up || "")) {
           ["x", "y", "size", "up"].forEach(function (f) { lk[f] = rk[f]; });
+          stats.updated++;
         }
         var seen = {};
         (lk.events || []).forEach(function (e) { seen[e.id] = true; });
-        (rk.events || []).forEach(function (e) { if (!seen[e.id]) lk.events.push(e); });
+        (rk.events || []).forEach(function (e) { if (!seen[e.id]) { lk.events.push(e); stats.events++; } });
       });
     });
-    return local;
+
+    // (c)+(d) Apply the reconciled tombstones to what's local now: bury what a
+    // newer tombstone deletes, heal a tombstone a newer edit has outlived.
+    var activeGone = false;
+    local.cars = local.cars.filter(function (lc) {
+      if (tombNewer(local.gone[lc.id], lc.up)) {
+        if (lc.id === local.activeCar) activeGone = true;
+        stats.removed++;
+        return false;
+      }
+      heal(local.gone, lc.id, lc.up);
+      lc.gone = lc.gone || {};
+      lc.chips = lc.chips.filter(function (lk) {
+        if (tombNewer(lc.gone[lk.id], lk.up)) { stats.removed++; return false; }
+        heal(lc.gone, lk.id, lk.up);
+        return true;
+      });
+      return true;
+    });
+
+    // deleteCar's guarantee, held through a merge too: never car-less, never
+    // pointing at a car that's gone.
+    if (!local.cars.length) local.cars.push(newCar(""));
+    if (activeGone || !local.cars.some(function (c) { return c.id === local.activeCar; })) {
+      local.activeCar = local.cars[0].id;
+    }
+
+    return { state: local, stats: stats };
   }
 
   window.SC = window.SC || {};

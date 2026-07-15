@@ -27,7 +27,7 @@
 
   // -> "i:<token>" or "j:<token>" (prefix included)
   async function encodeState(state) {
-    var json = JSON.stringify({ v: 1, cars: state.cars });
+    var json = JSON.stringify({ v: 1, cars: state.cars, gone: state.gone || {} });
     var raw = new TextEncoder().encode(json);
     if (typeof CompressionStream !== "undefined") {
       var gz = await pipe(raw, new CompressionStream("gzip"));

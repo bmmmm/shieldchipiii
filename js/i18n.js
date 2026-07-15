@@ -100,22 +100,54 @@
     confirmDeleteChip: { de: "Diesen Marker samt Verlauf löschen?", en: "Delete this marker and its timeline?" },
     close: { de: "Schließen", en: "Close" },
 
-    // share
+    // share panel
     share: { de: "Teilen & Sichern", en: "Share & backup" },
-    copyLink: { de: "Share-Link kopieren", en: "Copy share link" },
     copied: { de: "kopiert ✓", en: "copied ✓" },
+    // "singular|plural" split on {n}, resolved by plur() in app.js — German
+    // plurals are irregular, so both forms are spelled out rather than "(s)".
+    nVehicles: { de: "{n} Fahrzeug|{n} Fahrzeuge", en: "{n} vehicle|{n} vehicles" },
+    nEntries: { de: "{n} Eintrag|{n} Einträge", en: "{n} entry|{n} entries" },
+
+    // device-sync card
+    deviceSync: { de: "Mit anderem Gerät teilen", en: "Share with another device" },
+    copyLink: { de: "Link kopieren", en: "Copy link" },
+    qrFits: { de: "passt in den QR-Code", en: "fits in the QR code" },
+    qrTooBig: { de: "zu groß für den QR-Code — Link oder JSON nutzen", en: "too big for the QR code — use the link or JSON" },
+
+    // backup card
+    backup: { de: "Sichern", en: "Backup" },
     copyAscii: { de: "ASCII kopieren", en: "Copy ASCII" },
+    copyAsciiDesc: { de: "Textbild für die Zwischenablage", en: "Text picture for the clipboard" },
     exportJson: { de: "JSON exportieren", en: "Export JSON" },
+    exportJsonDesc: { de: "Sicherungsdatei herunterladen", en: "Download a backup file" },
     importJson: { de: "JSON importieren", en: "Import JSON" },
-    shareNote: { de: "Alle Daten bleiben in diesem Browser (localStorage). Der Share-Link enthält alle Fahrzeuge und Einträge — nur an eigene Geräte weitergeben.", en: "All data stays in this browser (localStorage). The share link contains all vehicles and entries — only share with your own devices." },
-    terminalNote: { de: "Terminal: cli/shieldchipiii.js show '<Share-Link>'", en: "Terminal: cli/shieldchipiii.js show '<share link>'" },
+    importJsonDesc: { de: "Aus einer Sicherungsdatei laden", en: "Load from a backup file" },
+
+    shareNote: { de: "Alle Daten bleiben in diesem Browser (localStorage). Der Link enthält alle Fahrzeuge und Einträge — nur an eigene Geräte weitergeben.", en: "All data stays in this browser (localStorage). The link contains all vehicles and entries — only share with your own devices." },
+    terminalNote: { de: "Terminal: cli/shieldchipiii.js show '<Link>'", en: "Terminal: cli/shieldchipiii.js show '<link>'" },
+
+    // import dialog
     importTitle: { de: "Daten aus Link importieren?", en: "Import data from link?" },
-    importSummary: { de: "{cars} Fahrzeug(e), {chips} Eintrag/Einträge", en: "{cars} vehicle(s), {chips} entry/entries" },
-    importMerge: { de: "Zusammenführen", en: "Merge" },
+    importTitleFirst: { de: "Daten von deinem anderen Gerät übernehmen?", en: "Take over data from your other device?" },
+    importMerge: { de: "Zusammenführen (empfohlen)", en: "Merge (recommended)" },
+    importMergeHint: { de: "Neueste Änderung gewinnt pro Eintrag, Verläufe werden vereint, Gelöschtes bleibt gelöscht.", en: "Newest change wins per entry, timelines are merged, deletions stick." },
     importReplace: { de: "Ersetzen", en: "Replace" },
+    importTakeover: { de: "Übernehmen", en: "Take over" },
+    importTakeoverHint: { de: "Dieses Gerät hat noch keine eigenen Daten.", en: "This device has no data of its own yet." },
     importCancel: { de: "Abbrechen", en: "Cancel" },
+    importMore: { de: "+ {n} weitere", en: "+ {n} more" },
     importBroken: { de: "Link konnte nicht gelesen werden (beschädigt oder unvollständig kopiert).", en: "Could not read the link (corrupted or copied incompletely)." },
     importFileBroken: { de: "Datei konnte nicht gelesen werden — ist es ein shieldchipiii-JSON-Export?", en: "Could not read the file — is it a shieldchipiii JSON export?" },
+
+    // import result toast, assembled from merge stats (non-zero parts only)
+    importDone: { de: "Übernommen:", en: "Imported:" },
+    importNothing: { de: "Nichts Neues — alles schon aktuell.", en: "Nothing new — already up to date." },
+    replaceDone: { de: "Daten ersetzt:", en: "Data replaced:" },
+    statCars: { de: "{n} Fahrzeug neu|{n} Fahrzeuge neu", en: "{n} vehicle new|{n} vehicles new" },
+    statAdded: { de: "{n} Eintrag neu|{n} Einträge neu", en: "{n} entry new|{n} entries new" },
+    statUpdated: { de: "{n} aktualisiert", en: "{n} updated" },
+    statEvents: { de: "{n} Ereignis ergänzt|{n} Ereignisse ergänzt", en: "{n} event added|{n} events added" },
+    statDeletions: { de: "{n} Löschung übernommen|{n} Löschungen übernommen", en: "{n} deletion kept|{n} deletions kept" },
 
     ruleTitle: { de: "Faustregel Reparatur", en: "Repair rule of thumb" },
     ruleBody: { de: "Reparatur statt Tausch geht in der Regel nur, wenn alle drei Punkte stimmen: der Schaden ist kleiner als eine {coin}, er liegt außerhalb des Sichtfelds (29 cm breiter Bereich — eine DIN-A4-Seite quer — über dem Lenkrad), und er ist mehr als {cm} cm vom Scheibenrand entfernt. Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur, den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — entschieden wird in der Werkstatt.", en: "A repair instead of a replacement usually needs all three to hold: the damage is smaller than a {coin}, it sits outside the field of view (a 29 cm band — a DIN A4 sheet on its side — above the wheel), and it is more than {cm} cm from the edge. If one fails, a repair is unlikely — contact a glass service and have them check. Comprehensive insurance often covers the repair fully. No guarantee — the shop decides." },
