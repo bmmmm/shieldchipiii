@@ -19,6 +19,9 @@ jobs:
       # No install step: the app has no dependencies and no build, and the
       # test loads js/*.js the same way the browser does.
       - run: node test/smoke.js
+      # The phone is this app's primary device, and nothing else can check a
+      # touch target without a DOM.
+      - run: node test/touch-targets.js
       # The CLI is the other consumer of the shared modules — check it still
       # renders a legacy payload end to end.
       - run: node cli/shieldchipiii.js show test/fixtures/legacy-v1.json

@@ -207,18 +207,39 @@ footer a { color: var(--accent); text-decoration: none; }
   .marker-popup { width: 260px; }
 }
 
-/* Touch. The controls below are comfortable for a cursor and too small for a
-   finger — roughly 8x16px for the × that deletes an event. Keyed on the pointer
-   rather than the width: a narrow desktop window still has a precise pointer
-   and shouldn't get finger-sized buttons, while a tablet is wide and doesn't.
-   The marker targets are handled in render.js, which measures in real pixels. */
+/* Touch. Every control here was sized for a cursor: the shared rule at the top
+   of this file works out to 33px tall, the country picker to 26px, the ⓘ that
+   opens a source to 17px. A finger needs about 44 (Apple HIG; Material asks
+   48dp), so on a coarse pointer they get a floor.
+   Keyed on the pointer rather than the viewport: a narrow desktop window still
+   has a precise pointer and keeps its compact controls, while a tablet is wide
+   and doesn't. Marker targets aren't here — render.js picks those by distance
+   in real pixels, since they scale with the drawing. */
 @media (pointer: coarse) {
-  .tl-del { padding: 8px 12px; font-size: 16px; }
-  .pop-x { padding: 8px 12px; }
+  /* A floor rather than more padding, so each control keeps its own spacing. */
+  button, .filebtn, select, input[type="text"], input[type="date"] { min-height: 44px; }
+  /* iOS zooms the whole page in when a text field smaller than 16px takes
+     focus, and doesn't zoom back out. Everything inherits the body's 14px, so
+     naming the vehicle would leave you scrolled sideways on the glass. */
+  input[type="text"], input[type="date"] { font-size: 16px; }
+  /* Icon buttons have no text to make them wide enough. */
+  .pop-x, .tl-del { min-width: 44px; }
+  .tl-del { min-height: 44px; font-size: 16px; }
+  /* Not a button, so the floor above misses it, and padding alone can't fix an
+     inline link: it would reach 41px and the overflow would sit invisibly over
+     the select below, catching taps meant for that. A box of its own is honest
+     about the space it takes, and 15px makes the glyph findable while it's
+     there. */
+  .rec-src {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; min-height: 44px; vertical-align: middle; font-size: 15px;
+  }
   /* 44px rows: the table is the easiest way to reach a chip on a phone. */
   #chipTable td { padding: 12px 8px; }
-  .timeline li { padding: 5px 0; }
   /* Seven sliders on the narrowest screen — let them use the width they have. */
   .sliders .pair { width: 100%; }
-  input[type="range"] { max-width: none; flex: 1; height: 32px; }
+  input[type="range"] { max-width: none; flex: 1; height: 44px; }
+  /* Finger-sized rows make a long timeline outgrow the pane the popup is
+     anchored to, and it was already the tallest thing on a phone. */
+  .marker-popup { max-height: 70vh; overflow-y: auto; }
 }
