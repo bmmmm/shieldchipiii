@@ -11,6 +11,7 @@ const shapes = require(path.join(__dirname, "..", "js", "shapes.js"));
 const logic = require(path.join(__dirname, "..", "js", "logic.js"));
 const ascii = require(path.join(__dirname, "..", "js", "ascii.js"));
 const sources = require(path.join(__dirname, "..", "js", "sources.js"));
+const qr = require(path.join(__dirname, "..", "js", "qr.js"));
 
 const COIN_LABEL = { coinE2: "2-euro coin", coinChf2: "CHF 2 coin", coinDkk2: "2-krone coin" };
 const SIZE_LABEL = {
@@ -217,6 +218,31 @@ function emit(state, flags) {
   if (!base) console.log("(open as <app-url>#" + token.slice(0, 12) + "…, or pass --base <app-url>)");
 }
 
+// Two matrix rows per terminal line via half-block glyphs. Terminals are
+// mostly dark, so by default the LIGHT modules get the blocks — the code then
+// reads dark-on-light, which is what scanners want; --invert flips that for
+// light terminals. The quiet zone is drawn, not left to the terminal's bg.
+function qrLines(text, invert) {
+  const m = qr.encode(text);
+  const B = 4; // quiet zone in modules (spec minimum)
+  const size = m.size + 2 * B;
+  const dark = (x, y) => {
+    const mx = x - B, my = y - B;
+    return mx >= 0 && my >= 0 && mx < m.size && my < m.size && m.modules[my][mx];
+  };
+  const lines = [];
+  for (let y = 0; y < size; y += 2) {
+    let line = "";
+    for (let x = 0; x < size; x++) {
+      let top = dark(x, y), bot = y + 1 < size ? dark(x, y + 1) : false;
+      if (!invert) { top = !top; bot = !bot; }
+      line += top && bot ? "█" : top ? "▀" : bot ? "▄" : " ";
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
 const USAGE = `shieldchipiii — windshield stone chip logbook (terminal client)
 
 Usage:
@@ -230,6 +256,8 @@ Usage:
   shieldchipiii.js event <src> --marker <nr> --type <${ADDABLE.join("|")}>
                    [--car <name|nr>] [--date YYYY-MM-DD] [--where "..."] [--note "..."]
                    [--out file.json] [--base <app-url>]
+  shieldchipiii.js qr    <src> [--base <app-url>] [--invert]
+                   share link as a terminal QR (--invert on light terminals)
   shieldchipiii.js decode <src>                     print JSON to stdout
   shieldchipiii.js encode <file.json> [--base url]  print share token/URL
 
@@ -244,7 +272,7 @@ Countries with known criteria: ${sources.CODES.join(" ")}`;
 
 // ---------- main ----------
 
-const COMMANDS = ["show", "list", "add", "event", "decode", "encode"];
+const COMMANDS = ["show", "list", "add", "event", "qr", "decode", "encode"];
 
 function main() {
   const { flags, pos } = parseArgs(process.argv.slice(2));
@@ -330,6 +358,17 @@ function main() {
       printCar(car, { width: 58 });
       console.log("");
       emit(state, flags);
+      break;
+    }
+    case "qr": {
+      const token = encodeToken(state);
+      const base = flags.base || process.env.SHIELDCHIPIII_BASE;
+      const text = base ? String(base).replace(/#.*$/, "") + "#" + token : "#" + token;
+      let lines;
+      try { lines = qrLines(text, !!flags.invert); }
+      catch (e) { die("too much data for a QR code (" + text.length + " chars, max 2953) — share the link or a JSON export instead"); }
+      console.log(lines.map((l) => "  " + l).join("\n"));
+      console.log("\n  " + text.length + " chars" + (base ? "" : "  (bare token — pass --base <app-url> so a phone can open it)"));
       break;
     }
     case "decode":

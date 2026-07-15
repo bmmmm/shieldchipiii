@@ -84,6 +84,8 @@ node cli/shieldchipiii.js list  export.json         entry table + full timeline
 node cli/shieldchipiii.js add   export.json --x 0.3 --y 0.6 --size c50
 node cli/shieldchipiii.js event export.json --marker 2 --type repaired \
                                --where "Carglass Bonn"
+node cli/shieldchipiii.js qr    export.json --base https://example.com/
+                                                    share link as a terminal QR
 node cli/shieldchipiii.js decode '<share link>'     JSON to stdout
 node cli/shieldchipiii.js encode export.json --base https://example.com/
 ```
