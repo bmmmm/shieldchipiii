@@ -55,33 +55,45 @@ sharing between devices works via URL token, JSON export — or the terminal.
 
 Open `index.html` in a browser. That's it — no build, no framework, no npm.
 
+Tests: `node test/smoke.js` — no dependencies there either. CI runs it on
+every push.
+
 ## Terminal
 
 ```
 node cli/shieldchipiii.js show  '<share link>'      ASCII diagram + entry table
-node cli/shieldchipiii.js list  export.json         entry table only
-node cli/shieldchipiii.js add   export.json --x 0.3 --y 0.6 --size c50 --fov
+node cli/shieldchipiii.js list  export.json         entry table + full timeline
+node cli/shieldchipiii.js add   export.json --x 0.3 --y 0.6 --size c50
+node cli/shieldchipiii.js event export.json --marker 2 --type repaired \
+                               --where "Carglass Bonn"
 node cli/shieldchipiii.js decode '<share link>'     JSON to stdout
 node cli/shieldchipiii.js encode export.json --base https://example.com/
 ```
 
 `<src>` is interchangeable: a JSON export file, a full share URL, or a bare
-`i:`/`j:` token. `add` prints a fresh share URL you can open in the browser
-(merge on import); `--out file.json` also writes the JSON.
+`i:`/`j:` token. `add` and `event` print a fresh share URL you can open in the
+browser (merge on import); `--out file.json` also writes the JSON. Whether a
+chip is in the field of view or the edge zone follows from `--x`/`--y` — it's
+read off the position, never passed in.
 
 Example output:
 
 ```
 == Golf 7 ==  [sedan, wheel left]
 
-              ____________[=]___________
-             /             |            \
-            /    o1                      \
-           /                    x2        \
-          /                                \
-         /__________________________________\
-        ~~~~~~~~~~~~~(O)~~~~~~~~~~~~~~~~~~~~~~
+ _________________[=]________________
+\                  |                 /
+ \                                  /
+ \       o1                         /
+ \                    X2            /
+  \                                /
+  \                                /
+  \________________________________/
+ ~~~~~~~~(O)~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
+
+The pane tapers downward because you are looking at it from the driver's seat:
+the top edge is the near one.
 
 ## Data & privacy
 
