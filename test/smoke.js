@@ -25,7 +25,7 @@ const sandbox = {
 sandbox.window = sandbox; sandbox.self = sandbox;
 vm.createContext(sandbox);
 
-["shapes", "logic", "ascii", "i18n", "store", "share"].forEach((m) => {
+["shapes", "sources", "logic", "ascii", "i18n", "store", "share"].forEach((m) => {
   vm.runInContext(fs.readFileSync(path.join(root, "js", m + ".js"), "utf8"), sandbox, { filename: m + ".js" });
 });
 const SC = sandbox.SC;
@@ -100,10 +100,33 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.strictEqual(SC.logic.recommend(repaired).level, "ok");
 
   // --- advice we took from a shop carries its source; our own doesn't ---
-  assert.strictEqual(SC.logic.recommend(c10out, { inFov: true }).source, "carglass");
-  assert.ok(SC.logic.SOURCES.carglass, "the source id resolves to a URL");
-  assert.strictEqual(SC.logic.recommend(repaired).source, undefined,
+  // logic.js only marks it as sourced; which page backs it depends on the
+  // car's country, so the caller resolves that through sources.js.
+  assert.strictEqual(SC.logic.recommend(c10out, { inFov: true }).sourced, true);
+  assert.strictEqual(SC.logic.recommend(repaired).sourced, undefined,
     "status-driven advice is ours and stays uncited");
+  assert.ok(SC.sources.criteriaFor("de").url, "a country's criteria resolve to a page");
+
+  // --- too many open chips for the shop to repair ---
+  // Only some countries publish a cap; where they don't, there's no hint to
+  // give and chipLoad must stay quiet rather than invent one.
+  const loadCar = (n, status) => ({
+    chips: Array.from({ length: n }, (_, i) => ({
+      id: "k" + i, x: 0.5, y: 0.5, size: "c10",
+      events: [SC.logic.makeEvent("new", "2026-01-01")]
+        .concat(status ? [SC.logic.makeEvent(status, "2026-02-01")] : []),
+    })),
+  });
+  assert.strictEqual(SC.logic.chipLoad(loadCar(9), null), null, "no published cap, no warning");
+  assert.strictEqual(SC.logic.chipLoad(loadCar(2), 3), null, "under the cap, nothing to say");
+  assert.strictEqual(SC.logic.chipLoad(loadCar(3), 3).level, "warn", "at the cap: still repairable, but that's the lot");
+  assert.strictEqual(SC.logic.chipLoad(loadCar(4), 3).level, "danger", "over the cap");
+  assert.strictEqual(SC.logic.chipLoad(loadCar(4), 3).count, 4);
+  // Repaired chips don't count against the cap — the shop repairs what's open.
+  assert.strictEqual(SC.logic.chipLoad(loadCar(5, "repaired"), 3), null,
+    "repaired chips are not a load on the pane");
+  assert.strictEqual(SC.logic.chipLoad(loadCar(5, "observing"), 3).count, 5,
+    "an observed chip is still an open one");
 
   // --- untrusted input: a share link is just someone else's JSON ---
   // Regression: a hostile payload reached the popup's innerHTML unescaped.
@@ -181,22 +204,25 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.ok(sh.paramsFor({ shape: "sedan" }).top >= sh.paramsFor({ shape: "sedan" }).bottom,
     "sedan is not bottom-heavy — that was the inverted-perspective bug");
 
-  // --- 10 cm edge margin (real centimetres, not picture fractions) ---
+  // --- edge margin in real centimetres, not picture fractions ---
+  // The threshold is the country's, passed in — shapes.js has no constant for
+  // it any more, because 10 cm is Germany's number and not everyone's.
   const sedan = sh.paramsFor({ shape: "sedan" });
-  assert.strictEqual(sh.MARGIN_CM, 10);
+  const DE_CM = SC.sources.marginCmFor("de");
+  assert.strictEqual(DE_CM, 10, "Germany is the 10 cm rule the presets were built around");
   assert.ok(sedan.widthCm > 100 && sedan.heightCm > 50, "preset carries a real size");
   // centre of the pane is far from every edge
   const centre = { x: 0.5, y: 0.5 };
   assert.ok(sh.edgeDistanceCm(sedan, centre) > 20, "centre is clear of the rim");
-  assert.strictEqual(sh.inMargin(sedan, centre), false);
+  assert.strictEqual(sh.inMargin(sedan, centre, DE_CM), false);
   // hard against the left edge -> in the margin
   const atLeft = { x: 0.01, y: 0.5 };
   assert.ok(sh.edgeDistanceCm(sedan, atLeft) < 10, "chip at the rim is within 10 cm");
-  assert.strictEqual(sh.inMargin(sedan, atLeft), true);
+  assert.strictEqual(sh.inMargin(sedan, atLeft, DE_CM), true);
   // near the bottom edge: vertical cm are foreshortened, so a chip that looks
   // equally close vertically must still be judged in real cm
-  assert.strictEqual(sh.inMargin(sedan, { x: 0.5, y: 0.995 }), true, "chip at the bottom rim");
-  assert.strictEqual(sh.inMargin(sedan, { x: 0.5, y: 0.75 }), false, "well above the bottom rim");
+  assert.strictEqual(sh.inMargin(sedan, { x: 0.5, y: 0.995 }, DE_CM), true, "chip at the bottom rim");
+  assert.strictEqual(sh.inMargin(sedan, { x: 0.5, y: 0.75 }, DE_CM), false, "well above the bottom rim");
   // the same fraction is a different real distance on a narrower pane —
   // this is the "10 cm is more on some panes, less on others" case
   const wide = sh.paramsFor({ shape: "sedan", adjust: { widthCm: 190 } });
@@ -204,8 +230,16 @@ const hasCtrl = (s) => Array.from(String(s))
   const probe = { x: 0.08, y: 0.5 };
   assert.ok(sh.edgeDistanceCm(wide, probe) > sh.edgeDistanceCm(narrowPane, probe),
     "same relative spot is further from the edge on a wider pane");
+  // the verdict follows the country: a chip Spain repairs, Germany replaces
+  const inBetween = { x: 0.043, y: 0.5 };
+  const cm = sh.edgeDistanceCm(sedan, inBetween);
+  assert.ok(cm > SC.sources.marginCmFor("es") && cm < DE_CM,
+    "probe sits between the Spanish and German thresholds (" + cm.toFixed(1) + " cm)");
+  assert.strictEqual(sh.inMargin(sedan, inBetween, DE_CM), true, "Germany: too close to the rim");
+  assert.strictEqual(sh.inMargin(sedan, inBetween, SC.sources.marginCmFor("es")), false,
+    "Spain: the same chip is clear — this is the whole point of per-country criteria");
   // margin inset stays inside the glass
-  sh.marginInset(sedan).forEach(function (q) {
+  sh.marginInset(sedan, DE_CM).forEach(function (q) {
     assert.ok(q[0] > -0.5 && q[0] < 1.5 && q[1] > -0.5 && q[1] < 1.5, "inset point sane");
   });
 
@@ -369,8 +403,11 @@ const hasCtrl = (s) => Array.from(String(s))
   const pascal = (s) => s.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join("");
   SC.logic.STATUS_TYPES.forEach((ty) => wanted.add("status" + pascal(ty)));
   SC.logic.ALL_TYPES.forEach((ty) => wanted.add("ev" + pascal(ty)));
-  SC.logic.SIZES.forEach((s) => wanted.add("size" + pascal(s)));
   SC.shapes.PRESET_ORDER.forEach((s) => wanted.add("shape" + pascal(s)));
+  // e2 is the odd one out: it's the repair threshold, so it's labelled with
+  // whatever coin the country gauges by, not a fixed size key.
+  SC.logic.SIZES.filter((s) => s !== "e2").forEach((s) => wanted.add("size" + pascal(s)));
+  SC.sources.CODES.forEach((c) => wanted.add(SC.sources.coinKeyFor(c)));
 
   // Every verdict recommend() can actually reach, by walking the real tree
   // rather than trusting a hand-kept list — the crack rename got out of sync
@@ -383,6 +420,13 @@ const hasCtrl = (s) => Array.from(String(s))
     }));
   }));
   verdicts.forEach((k) => wanted.add(k));
+
+  // Same for the chip-load warning: its keys live in logic.js, so a scan of
+  // app.js literals can't see them either.
+  [0, 3, 4].forEach((n) => {
+    const load = SC.logic.chipLoad(loadCar(n), 3);
+    if (load) wanted.add(load.key);
+  });
 
   // Asserted against the dictionary, not through t(): t() falls back to English
   // for a missing German string, so a German gap would read as a pass.

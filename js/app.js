@@ -16,7 +16,10 @@
   var popup = $("markerPopup");
 
   var SHAPE_KEY = { compact: "shapeCompact", sedan: "shapeSedan", suv: "shapeSuv", van: "shapeVan", sport: "shapeSport" };
-  var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", e2: "sizeE2", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
+  // No e2 here: it's the repair threshold and gets named after the coin the
+  // car's country measures with, so sizeLabel() resolves it. Same split as the
+  // CLI's SIZE_LABEL.
+  var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
 
   // The repair threshold is named after a coin, and not every market measures
   // with the 2-euro one — Switzerland says CHF 2, Denmark a 2-krone. Same
