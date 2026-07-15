@@ -636,6 +636,18 @@ const hasCtrl = (s) => Array.from(String(s))
     assert.ok(htmlIds.has(id), "app.js reaches for #" + id + ", which index.html doesn't have");
   });
 
+  // --- every local asset carries the same cache stamp ---
+  // A deploy that mixes cached old modules with fresh ones crashes for real
+  // (GitHub Pages caches for 10 minutes); scripts/stamp-assets.sh writes one
+  // ?v= stamp everywhere, and a half-stamped index.html must fail here.
+  const assetUrls = Array.from(html.matchAll(/(?:src|href)="((?!https?:)[^"]*\.(?:js|css)[^"]*)"/g)).map((m) => m[1]);
+  const scriptTags = (html.match(/<script src="/g) || []).length;
+  assert.strictEqual(assetUrls.length, scriptTags + 1,
+    "the asset scan must see every script tag plus the stylesheet, got " + assetUrls.length + " of " + (scriptTags + 1));
+  const stamps = new Set(assetUrls.map((u) => (u.match(/\?v=([^"&?]+)$/) || [])[1]));
+  assert.ok(!stamps.has(undefined) && stamps.size === 1,
+    "local assets carry " + JSON.stringify(Array.from(stamps)) + " as cache stamps — run scripts/stamp-assets.sh");
+
   // --- every translation key the UI asks for has text in both languages ---
   const wanted = new Set();
   Array.from(html.matchAll(/data-i18n(?:-ph)?="([^"]+)"/g)).forEach((m) => wanted.add(m[1]));

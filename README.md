@@ -76,6 +76,10 @@ Open `index.html` in a browser. That's it — no build, no framework, no npm.
 Tests: `node test/smoke.js` — no dependencies there either. CI runs it on
 every push.
 
+Releasing: run `scripts/stamp-assets.sh` first — it stamps the asset URLs in
+`index.html` with the current commit hash, so browsers can't mix cached old
+modules with a fresh deploy (the smoke test fails on inconsistent stamps).
+
 ## Terminal
 
 ```
