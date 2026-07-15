@@ -33,7 +33,9 @@
     legendNoRepair: { de: "Rot = verbotener Bereich, Reparatur unwahrscheinlich:", en: "Red = no-go zone, repair unlikely:" },
     legendFov: { de: "Sichtfeld Fahrer:in, 29 cm", en: "driver's field of view, 29 cm" },
     legendMargin: { de: "Randzone, {cm} cm", en: "edge zone, {cm} cm" },
-    country: { de: "Land", en: "Country" },
+    // Sits under the zones it governs: the numbers above only mean anything
+    // once you know whose rules they are.
+    criteriaFor: { de: "Kriterien für", en: "Criteria for" },
     chips: { de: "Einträge", en: "Entries" },
     noChips: { de: "Noch keine Einträge — klick auf die Scheibe.", en: "No entries yet — click the glass." },
 

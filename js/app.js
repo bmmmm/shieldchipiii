@@ -87,6 +87,7 @@
     var fmt = function (it) { return it[0] + " " + esc(t(it[1], vars)); };
     $("legend").innerHTML = statuses.map(fmt).join(" · ") +
       '<span class="legend-zones"><strong>' + esc(t("legendNoRepair")) + "</strong> " + zones.map(fmt).join(" · ") + "</span>";
+    renderCountry();
   }
 
   function renderCarTabs() {
@@ -108,7 +109,9 @@
   }
 
   // Country options, named in the UI's language and sorted by that name.
-  // Rebuilt on language switch, hence not baked into index.html.
+  // Rebuilt on language switch, hence not baked into index.html. Driven from
+  // renderLegend: the picker sits with the zones it governs, and a number in
+  // that legend is meaningless without the country it belongs to.
   function renderCountry() {
     var c = car();
     var lang = i18n.get();
@@ -124,7 +127,6 @@
     $("carName").value = c.name;
     var p = shapes.paramsFor(c);
     renderShapeButtons();
-    renderCountry();
     $("adjTop").value = Math.round(p.top * 100);
     $("adjBottom").value = Math.round(p.bottom * 100);
     $("adjHeight").value = Math.round(p.aspect * 100);

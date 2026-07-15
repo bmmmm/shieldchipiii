@@ -121,6 +121,9 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
 
 .legend { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+/* The country belongs to the zones above it, not to the hint below. */
+.legend-country { display: inline-flex; gap: 6px; align-items: center; margin-top: 4px; }
+.legend-country select { font-size: 13px; padding: 2px 6px; }
 .legend-zones { display: block; margin-top: 3px; }
 .legend-zones strong { color: var(--danger); font-weight: normal; }
 .lg { font-size: 15px; vertical-align: -1px; }
