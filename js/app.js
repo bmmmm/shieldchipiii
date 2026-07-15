@@ -23,10 +23,7 @@
   var popup = $("markerPopup");
 
   var SHAPE_KEY = { compact: "shapeCompact", sedan: "shapeSedan", suv: "shapeSuv", van: "shapeVan", sport: "shapeSport" };
-  // No e2 here: it's the repair threshold and gets named after the coin the
-  // car's country measures with, so sizeLabel() resolves it. Same split as the
-  // CLI's SIZE_LABEL.
-  var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
+  var SIZE_KEY = logic.SIZE_KEY;
 
   // The repair threshold is named after a coin, and not every market measures
   // with the 2-euro one — Switzerland says CHF 2, Denmark a 2-krone. Same
@@ -35,15 +32,7 @@
     if (size === "e2") return "< " + t(sources.coinKeyFor(car().country));
     return t(SIZE_KEY[size] || size);
   }
-  var STATUS_KEY = {
-    new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
-    repaired: "statusRepaired", irreparable: "statusIrreparable",
-  };
-  var EVENT_KEY = {
-    observing: "evObserving", repair_planned: "evRepairPlanned", repaired: "evRepaired",
-    irreparable: "evIrreparable", insurance_reported: "evInsuranceReported",
-    note: "evNote", new: "evNew",
-  };
+  var STATUS_KEY = logic.STATUS_KEY, EVENT_KEY = logic.EVENT_KEY;
   // What the user can add from the timeline (all but the implicit initial "new").
   // "replaced" is a vehicle-level action (glassSwap), not a per-chip event.
   var ADDABLE = ["observing", "repair_planned", "repaired", "irreparable", "insurance_reported", "note"];
@@ -625,6 +614,7 @@
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
     if (!$("confirmOverlay").hidden) { closeConfirm(); return; }
+    if (!$("reportOverlay").hidden) { closeReport(); return; }
     if (!$("importOverlay").hidden) { $("importOverlay").hidden = true; return; }
     if (!popup.hidden) closePopup();
   });
@@ -837,6 +827,28 @@
       $("pasteLink").value = "";
     } catch (e) { toast(t("importBroken"), "danger"); }
   }
+  // ---------- workshop report ----------
+
+  function closeReport() {
+    $("reportOverlay").hidden = true;
+    document.body.classList.remove("report-open");
+    $("reportBody").innerHTML = "";
+  }
+  $("makeReport").addEventListener("click", function () {
+    $("reportBody").innerHTML = window.SC.report.html(car(), {
+      date: today(),
+      origin: location.href.split("#")[0],
+    });
+    // The drawing goes in after the fact: report.html is a pure string
+    // builder, and the SVG needs a live element to be rendered into.
+    render.windshield($("reportBody").querySelector("[data-report-svg]"), car(), null);
+    document.body.classList.add("report-open"); // scopes the print stylesheet
+    $("reportOverlay").hidden = false;
+    $("reportClose").focus();
+  });
+  $("reportPrint").addEventListener("click", function () { window.print(); });
+  $("reportClose").addEventListener("click", closeReport);
+
   $("pasteGo").addEventListener("click", function () { importFromText($("pasteLink").value); });
   $("pasteLink").addEventListener("keydown", function (e) { if (e.key === "Enter") importFromText(this.value); });
   $("pasteLink").addEventListener("paste", function () {

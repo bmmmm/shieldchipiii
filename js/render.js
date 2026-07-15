@@ -11,16 +11,11 @@
     new: "m-new", observing: "m-observing", repair_planned: "m-planned",
     repaired: "m-repaired", irreparable: "m-irreparable",
   };
-  // i18n key per status, for the marker's spoken label — same split as
-  // app.js' STATUS_KEY. Resolved lazily: i18n loads before render, but the
-  // test rig assembles SC in its own order.
-  var STATUS_KEY = {
-    new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
-    repaired: "statusRepaired", irreparable: "statusIrreparable",
-  };
+  // The marker's spoken label. i18n is resolved lazily: it loads before
+  // render in the page, but the test rig assembles SC in its own order.
   function statusLabel(chip) {
     var i18n = window.SC.i18n;
-    return i18n ? i18n.t(STATUS_KEY[logic.currentStatus(chip)]) : logic.currentStatus(chip);
+    return i18n ? i18n.t(logic.STATUS_KEY[logic.currentStatus(chip)]) : logic.currentStatus(chip);
   }
 
   var M = 20;          // outer margin in viewBox units
@@ -220,5 +215,6 @@
   window.SC.render = {
     windshield: windshield, clientToBox: clientToBox, onGlass: onGlass,
     markerElementPos: markerElementPos, markerAt: markerAt, PICK_PX: PICK_PX, esc: esc,
+    STATUS_CLASS: STATUS_CLASS,
   };
 })();

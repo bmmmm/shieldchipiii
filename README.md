@@ -78,6 +78,11 @@ terminal.
   parking deck). Install it to the home screen for an app icon and a
   standalone window. Updates arrive one start later — the shell is served
   cache-first; the data itself never needed the network to begin with.
+- **Workshop report** — one tap opens a printable sheet for the shop: the
+  drawing, the pane's real measurements, the country criteria the verdicts
+  came from (source cited), a damage table with edge distances, and each
+  entry's full history. Print it or save it as a PDF. Every number on the
+  sheet comes from the same functions the app itself judges by.
 - **Terminal client** — the same data, rendered as ASCII in your shell.
 - **Community car models** — tweaked the shape to match your car? Click
   *Propose as car model* (under shape tweaking) to open a prefilled

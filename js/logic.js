@@ -242,9 +242,25 @@
     return (Array.isArray(cars) ? cars : []).map(normalizeCar).filter(Boolean);
   }
 
+  // The i18n key per stored type string — the one bridge from the data model
+  // to the dictionary, shared by the web UI, the SVG renderer and the report.
+  var STATUS_KEY = {
+    new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
+    repaired: "statusRepaired", irreparable: "statusIrreparable",
+  };
+  var EVENT_KEY = {
+    observing: "evObserving", repair_planned: "evRepairPlanned", repaired: "evRepaired",
+    irreparable: "evIrreparable", insurance_reported: "evInsuranceReported",
+    note: "evNote", new: "evNew",
+  };
+  // No e2 here: it's the repair threshold and gets named after the coin the
+  // car's country measures with — the callers resolve it via coinKeyFor.
+  var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
+
   return {
     STATUS_TYPES: STATUS_TYPES, NEUTRAL_TYPES: NEUTRAL_TYPES, ALL_TYPES: ALL_TYPES,
     STATUS_SYMBOL: STATUS_SYMBOL, SIZES: SIZES,
+    STATUS_KEY: STATUS_KEY, EVENT_KEY: EVENT_KEY, SIZE_KEY: SIZE_KEY,
     isCrack: isCrack, currentStatus: currentStatus, timeline: timeline,
     lastEventOfType: lastEventOfType, insuranceReported: insuranceReported,
     foundDate: foundDate, recommend: recommend, makeEvent: makeEvent, uid: uid,

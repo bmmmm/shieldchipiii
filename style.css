@@ -334,3 +334,37 @@ html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* ---- workshop report: a white sheet, on screen and on paper ---- */
+.report-overlay { align-items: flex-start; overflow-y: auto; }
+/* A light variable scope: every SVG and legend rule reads its colour from a
+   variable, so the drawing restyles itself for paper without a second theme. */
+.report-sheet {
+  --bg: #fff; --panel: #f6f8fa; --line: #d0d7de; --fg: #1f2328; --muted: #57606a;
+  --accent: #0969da; --warn: #bc4c00; --ok: #1a7f37; --danger: #cf222e; --glass: #eef2f6;
+  background: #fff; color: var(--fg); width: min(820px, calc(100% - 24px));
+  margin: 20px auto; padding: 22px 28px 26px; border-radius: 8px;
+}
+.report-actions { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+.report-sheet h1 { margin: 0 0 2px; font-size: 22px; }
+.report-sheet h3 { margin: 0 0 4px; font-size: 15px; }
+.rp-meta { margin: 0 0 10px; color: var(--muted); }
+.report-sheet svg { width: 100%; height: auto; }
+.rp-legend { font-size: 13px; color: var(--muted); margin: 4px 0; }
+.rp-legend strong { color: var(--danger); font-weight: normal; }
+.rp-criteria { font-size: 13px; color: var(--muted); }
+.rp-criteria a { color: var(--accent); word-break: break-all; }
+.report-sheet table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; }
+.report-sheet th { text-align: left; font-size: 12px; color: var(--muted); text-transform: capitalize; }
+.report-sheet th, .report-sheet td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.rp-chip { break-inside: avoid; margin: 12px 0; }
+.rp-tl { margin: 4px 0 0; padding-left: 20px; font-size: 13px; }
+.rp-disclaimer { color: var(--muted); font-size: 12px; margin: 16px 0 0; }
+
+@media print {
+  /* Only while the report is open — a plain cmd+P on the app stays the app. */
+  body.report-open > :not(#reportOverlay) { display: none !important; }
+  body.report-open #reportOverlay { position: static; background: none; display: block; overflow: visible; }
+  body.report-open .report-sheet { width: auto; margin: 0; padding: 0; border-radius: 0; }
+  body.report-open .report-actions { display: none !important; }
+}

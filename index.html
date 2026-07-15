@@ -102,6 +102,10 @@
             <button id="copyAscii" data-i18n="copyAscii"></button>
             <p class="muted sync-desc" data-i18n="copyAsciiDesc"></p>
           </div>
+          <div class="backup-item">
+            <button id="makeReport" data-i18n="reportBtn"></button>
+            <p class="muted sync-desc" data-i18n="reportBtnDesc"></p>
+          </div>
         </div>
       </div>
       <p class="muted sync-note" data-i18n="shareNote"></p>
@@ -142,6 +146,16 @@
     </div>
   </div>
 
+  <div id="reportOverlay" class="overlay report-overlay" hidden>
+    <div class="report-sheet" role="dialog" aria-labelledby="reportTitleEl">
+      <div class="report-actions">
+        <button id="reportPrint" class="primary" data-i18n="reportPrint"></button>
+        <button id="reportClose" class="ghost" data-i18n="close"></button>
+      </div>
+      <div id="reportBody"></div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <footer>
@@ -160,6 +174,7 @@
   <script src="js/share.js?v=4e6e9ba"></script>
   <script src="js/render.js?v=4e6e9ba"></script>
   <script src="js/qr.js?v=4e6e9ba"></script>
+  <script src="js/report.js?v=4e6e9ba"></script>
   <script src="js/app.js?v=4e6e9ba"></script>
 </body>
 </html>

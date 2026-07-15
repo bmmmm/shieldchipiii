@@ -44,6 +44,13 @@
     thNum: { de: "Nr.", en: "No." },
     thSym: { de: "Symbol", en: "Symbol" },
     thStatus: { de: "Status", en: "Status" },
+    reportBtn: { de: "Werkstatt-Bericht", en: "Workshop report" },
+    reportBtnDesc: { de: "Druckansicht mit Zeichnung, Fakten und Verlauf — drucken oder als PDF sichern", en: "A print view with the drawing, the facts and each entry's history — print or save as PDF" },
+    reportTitle: { de: "Steinschlag-Bericht", en: "Stone chip report" },
+    reportPrint: { de: "Drucken / PDF", en: "Print / PDF" },
+    reportCriteria: { de: "Beurteilt nach Carglass-Kriterien für {country}: Randzone {cm} cm, Sichtfeld 29 cm. Quelle:", en: "Judged by the Carglass criteria for {country}: edge zone {cm} cm, field of view 29 cm. Source:" },
+    reportDisclaimer: { de: "Alle Angaben ohne Gewähr — ob repariert werden kann, entscheidet die Werkstatt am Fahrzeug.", en: "No guarantees — whether a repair is possible is decided at the shop, at the car." },
+    reportMadeWith: { de: "Erstellt mit shieldchipiii:", en: "Created with shieldchipiii:" },
     sizeC10: { de: "< 10-Cent-Münze", en: "< 10-cent coin" },
     sizeC50: { de: "< 50-Cent-Münze", en: "< 50-cent coin" },
     // The repair threshold, named after the coin the local shop measures with

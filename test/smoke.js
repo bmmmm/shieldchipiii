@@ -25,7 +25,7 @@ const sandbox = {
 sandbox.window = sandbox; sandbox.self = sandbox;
 vm.createContext(sandbox);
 
-["shapes", "sources", "logic", "ascii", "i18n", "store", "share", "render", "qr"].forEach((m) => {
+["shapes", "sources", "logic", "ascii", "i18n", "store", "share", "render", "qr", "report"].forEach((m) => {
   vm.runInContext(fs.readFileSync(path.join(root, "js", m + ".js"), "utf8"), sandbox, { filename: m + ".js" });
 });
 const SC = sandbox.SC;
@@ -662,14 +662,45 @@ const hasCtrl = (s) => Array.from(String(s))
   swFiles.forEach((f) => assert.ok(htmlFiles.has(f),
     "sw.js precaches " + f + ", which index.html doesn't load"));
 
+  // --- the workshop report tells the shop what the app tells the user ---
+  // Same functions, same numbers: every fact on the sheet is recomputed here
+  // through the public API and must appear verbatim.
+  SC.i18n.set("en");
+  const repCar = {
+    id: "r1", name: "Repo <Golf>", shape: "sedan", wheel: "left", country: "de", gone: {},
+    chips: [
+      { id: "ra", x: 0.5, y: 0.5, size: "c50", gone: {}, events: [SC.logic.makeEvent("new", "2026-07-01")] },
+      { id: "rb", x: 0.97, y: 0.9, size: "crackM", gone: {}, events: [SC.logic.makeEvent("new", "2026-07-02"), SC.logic.makeEvent("repaired", "2026-07-10")] },
+    ],
+  };
+  const rep = SC.report.html(repCar, { date: "2026-07-16", origin: "https://example.test/app/" });
+  assert.ok(rep.includes("Stone chip report"), "the report follows the UI language (en)");
+  assert.ok(rep.includes("Repo &lt;Golf&gt;") && !rep.includes("<Golf>"), "user text reaches the sheet escaped");
+  assert.ok(rep.includes("data-report-svg"), "the sheet leaves a slot for the drawing");
+  const repP = SC.shapes.paramsFor(repCar);
+  const repDist = SC.shapes.edgeDistanceCm(repP, repCar.chips[1]);
+  assert.ok(rep.includes("~" + Math.round(repDist) + " cm"), "the edge distance on the sheet is the measured one");
+  const repRec = SC.logic.recommend(repCar.chips[1], {
+    inMargin: repDist < SC.sources.marginCmFor("de"),
+    inFov: SC.shapes.inFov(repP, repCar.chips[1], "left"),
+  });
+  const repVars = { cm: SC.sources.marginCmFor("de").toLocaleString("en"), coin: SC.i18n.t(SC.sources.coinKeyFor("de")) };
+  assert.ok(rep.includes(SC.render.esc(SC.i18n.t(repRec.key, repVars))), "the advice on the sheet is the app's advice, word for word");
+  assert.ok(rep.includes(SC.sources.criteriaFor("de").url), "the criteria source behind the verdicts is cited");
+  assert.ok(rep.includes("2026-07-10") && rep.includes(SC.render.esc(SC.i18n.t("evRepaired"))), "the logbook lists the repair with its date");
+  SC.i18n.set("de");
+  assert.ok(SC.report.html(repCar, { date: "2026-07-16", origin: "x" }).includes("Steinschlag-Bericht"),
+    "the report follows the UI language (de)");
+
   // --- every translation key the UI asks for has text in both languages ---
   const wanted = new Set();
   Array.from(html.matchAll(/data-i18n(?:-ph)?="([^"]+)"/g)).forEach((m) => wanted.add(m[1]));
   // Any string literal naming a dictionary key counts as a use: keys reach t()
   // through arrays, ternaries and helpers (flash(btn, "copied")) as often as
   // directly, and missing one of those would fail the wrong way — claiming a
-  // live key is dead.
-  Array.from(appSrc.matchAll(/"([A-Za-z]\w*)"/g)).forEach((m) => {
+  // live key is dead. The report builder speaks i18n too.
+  const reportSrc = fs.readFileSync(path.join(root, "js/report.js"), "utf8");
+  Array.from((appSrc + reportSrc).matchAll(/"([A-Za-z]\w*)"/g)).forEach((m) => {
     if (SC.i18n.DICT[m[1]]) wanted.add(m[1]);
   });
   // Labels reached through a lookup table rather than a literal, by convention:
