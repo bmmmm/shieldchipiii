@@ -25,7 +25,7 @@ const sandbox = {
 sandbox.window = sandbox; sandbox.self = sandbox;
 vm.createContext(sandbox);
 
-["shapes", "sources", "logic", "ascii", "i18n", "store", "share"].forEach((m) => {
+["shapes", "sources", "logic", "ascii", "i18n", "store", "share", "render"].forEach((m) => {
   vm.runInContext(fs.readFileSync(path.join(root, "js", m + ".js"), "utf8"), sandbox, { filename: m + ".js" });
 });
 const SC = sandbox.SC;
@@ -377,6 +377,69 @@ const hasCtrl = (s) => Array.from(String(s))
   remote2.cars[0].chips.push({ id: "k_new", x: 0.1, y: 0.1, size: "c10", fov: false, events: [SC.logic.makeEvent("new", "2026-01-01")], up: "2026-01-01" });
   const merged2 = SC.store.merge(JSON.parse(JSON.stringify(merged)), remote2);
   assert.strictEqual(merged2.cars[0].chips.length, 2);
+
+  // --- tapping a marker on a phone ---
+  // The reason this exists: the drawn hit circles are viewBox units and the SVG
+  // scales to the viewport, so the target that measures ~43px on a desktop is
+  // ~19px on a phone — and a miss doesn't do nothing, it adds a second chip on
+  // top of the one you were aiming at. markerAt() picks by distance in real
+  // pixels instead, so a fake element with a phone's measurements is enough to
+  // hold it honest without a DOM.
+  // Read from render.js rather than restated here: a copy of the number would
+  // stay green while the real one shrank.
+  const PICK_PX = SC.render.PICK_PX;
+  assert.ok(PICK_PX * 2 >= 44, "the pick target is at least a 44px finger");
+  const phoneSvg = (h) => ({
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 361, height: h }), // iPhone 15, minus body padding
+    viewBox: { baseVal: { width: 1000, height: 1000 * (h / 361) } },
+  });
+  const tapCar = {
+    shape: "sedan", wheel: "left", country: "de",
+    chips: [
+      { id: "k_left", x: 0.25, y: 0.4, size: "c10", events: [SC.logic.makeEvent("new", "2026-01-01")] },
+      // ~20px from k_left on a phone: close enough that one tap is inside both,
+      // which is the only arrangement where "nearest" and "whichever came
+      // first" give different answers.
+      { id: "k_near", x: 0.31, y: 0.4, size: "c10", events: [SC.logic.makeEvent("new", "2026-01-01")] },
+      { id: "k_right", x: 0.75, y: 0.4, size: "c10", events: [SC.logic.makeEvent("new", "2026-01-01")] },
+    ],
+  };
+  const svgEl = phoneSvg(200);
+  const at = (chip) => SC.render.markerElementPos(svgEl, tapCar, chip);
+  const tap = (x, y) => SC.render.markerAt(svgEl, tapCar, x, y, PICK_PX);
+
+  // Reach, measured on the isolated marker so no neighbour can answer for it.
+  const rightPos = at(tapCar.chips[2]);
+  assert.strictEqual(tap(rightPos.x, rightPos.y).id, "k_right", "dead on hits");
+  assert.strictEqual(tap(rightPos.x + 20, rightPos.y).id, "k_right",
+    "a tap 20px off still selects — on a phone the old ~9px radius missed this");
+  assert.strictEqual(tap(rightPos.x, rightPos.y - 20).id, "k_right", "and in the other axis");
+  assert.strictEqual(tap(rightPos.x + PICK_PX + 1, rightPos.y), null, "the limit is the limit");
+  assert.strictEqual(tap(rightPos.x + 40, rightPos.y), null, "well past it is empty glass — that's what adds a chip");
+  assert.strictEqual(SC.render.markerAt(svgEl, { chips: [] }, 10, 10, PICK_PX), null, "no chips, no pick");
+
+  // Nearest, measured on the close pair: a radius wide enough for a thumb
+  // overlaps its neighbours, and a hit test would then answer with whichever
+  // marker is drawn on top rather than the one aimed at.
+  const leftPos = at(tapCar.chips[0]), nearPos = at(tapCar.chips[1]);
+  const gap = nearPos.x - leftPos.x;
+  assert.ok(gap > 0 && gap < 2 * PICK_PX,
+    "the pair really does sit inside one tap (" + gap.toFixed(1) + "px), or the two asserts below prove nothing");
+  const between = (leftPos.x + nearPos.x) / 2;
+  assert.strictEqual(tap(between + 2, leftPos.y).id, "k_near", "just past the midpoint: the nearer one");
+  assert.strictEqual(tap(between - 2, leftPos.y).id, "k_left", "just short of it: the other one");
+
+  // The target must not shrink with the screen — that was the whole defect.
+  // Measured against the isolated marker again, at every width that matters.
+  [343, 361, 380, 828].forEach((w) => {
+    const el = {
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: w, height: 200 }),
+      viewBox: { baseVal: { width: 1000, height: 1000 * (200 / w) } },
+    };
+    const p = SC.render.markerElementPos(el, tapCar, tapCar.chips[2]);
+    assert.ok(SC.render.markerAt(el, tapCar, p.x + 20, p.y, PICK_PX),
+      "a 20px-off tap lands on every screen width, including " + w + "px");
+  });
 
   // --- the UI's wiring matches the page it wires up ---
   // app.js talks to the DOM by id and to i18n by key, and both fail quietly:

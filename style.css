@@ -203,3 +203,19 @@ footer a { color: var(--accent); text-decoration: none; }
 @media (max-width: 560px) {
   .marker-popup { width: 260px; }
 }
+
+/* Touch. The controls below are comfortable for a cursor and too small for a
+   finger — roughly 8x16px for the × that deletes an event. Keyed on the pointer
+   rather than the width: a narrow desktop window still has a precise pointer
+   and shouldn't get finger-sized buttons, while a tablet is wide and doesn't.
+   The marker targets are handled in render.js, which measures in real pixels. */
+@media (pointer: coarse) {
+  .tl-del { padding: 8px 12px; font-size: 16px; }
+  .pop-x { padding: 8px 12px; }
+  /* 44px rows: the table is the easiest way to reach a chip on a phone. */
+  #chipTable td { padding: 12px 8px; }
+  .timeline li { padding: 5px 0; }
+  /* Seven sliders on the narrowest screen — let them use the width they have. */
+  .sliders .pair { width: 100%; }
+  input[type="range"] { max-width: none; flex: 1; height: 32px; }
+}

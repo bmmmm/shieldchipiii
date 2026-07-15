@@ -460,10 +460,14 @@
 
   // ---------- glass: add / select / drag ----------
 
+  // Which marker a tap means — by distance in real pixels, not by what the
+  // pointer happens to be over. See render.markerAt.
+  function pickMarker(e) { return render.markerAt(svg, car(), e.clientX, e.clientY); }
+
   svg.addEventListener("pointerdown", function (e) {
-    var markerEl = e.target.closest(".marker");
-    if (markerEl) {
-      drag = { id: markerEl.dataset.id, moved: false };
+    var chip = pickMarker(e);
+    if (chip) {
+      drag = { id: chip.id, moved: false };
       svg.setPointerCapture(e.pointerId);
       e.preventDefault();
     }
@@ -505,7 +509,10 @@
 
   svg.addEventListener("click", function (e) {
     if (suppressClick) { suppressClick = false; return; }
-    if (e.target.closest(".marker")) return;
+    // Missing a marker used to add a chip on top of the one you were aiming
+    // at, so the same reach that selects has to be the one that decides the
+    // glass is empty here.
+    if (pickMarker(e)) return;
     var box = render.clientToBox(svg, car(), e.clientX, e.clientY);
     if (!render.onGlass(car(), box)) { closePopup(); return; }
     var p = shapes.paramsFor(car());

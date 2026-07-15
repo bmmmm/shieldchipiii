@@ -96,7 +96,10 @@
     parts.push('<line class="mirror-stalk" x1="' + BOTTOM_W / 2 + '" y1="2" x2="' + BOTTOM_W / 2 + '" y2="' + stalk + '"/>');
     parts.push('<rect class="mirror" x="' + (BOTTOM_W / 2 - mirrorW / 2) + '" y="' + stalk + '" width="' + mirrorW + '" height="30" rx="8"/>');
 
-    // markers
+    // markers. The .hit circle selects nothing — markerAt() does that by
+    // distance — it only gives the cursor something to turn "grab" over. At a
+    // desktop's scale its 26 units come to about the 22 px markerAt() reaches,
+    // so what the cursor promises is what a click gets.
     (car.chips || []).forEach(function (chip, i) {
       var box = shapes.chipToBox(p, chip);
       var x = box.x * BOTTOM_W, y = box.y * h;
@@ -171,9 +174,39 @@
     return { x: (vx / vb.width) * rect.width, y: (vy / vb.height) * rect.height };
   }
 
+  // How close a tap has to land, in real pixels: 22 of radius is a 44 px
+  // target, the size a finger needs (Apple HIG; Material asks 48dp).
+  var PICK_PX = 22;
+
+  // Which marker a click or tap means, or null for empty glass.
+  //
+  // Not a hit test: the drawn hit circles are sized in viewBox units, and the
+  // SVG scales to the viewport, so the same circle that gives a comfortable
+  // ~43px target on a desktop shrinks to ~19px on a phone — under half of what
+  // a finger needs, on the device this app is for. Measuring in real pixels
+  // keeps the target a finger's width on every screen, and on a desktop it
+  // lands within a pixel of what the circle already gave.
+  //
+  // Picking the nearest is what makes that safe: a radius generous enough for
+  // a thumb overlaps its neighbours, and a hit test would then hand back
+  // whichever marker happens to be on top rather than the one aimed at.
+  // Nearest-within-limit is always a single answer.
+  function markerAt(svg, car, clientX, clientY, limitPx) {
+    var rect = svg.getBoundingClientRect();
+    var px = clientX - rect.left, py = clientY - rect.top;
+    var best = null, bestD = limitPx != null ? limitPx : PICK_PX;
+    (car.chips || []).forEach(function (chip) {
+      var pos = markerElementPos(svg, car, chip);
+      var dx = pos.x - px, dy = pos.y - py;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < bestD) { bestD = d; best = chip; }
+    });
+    return best;
+  }
+
   window.SC = window.SC || {};
   window.SC.render = {
     windshield: windshield, clientToBox: clientToBox, onGlass: onGlass,
-    markerElementPos: markerElementPos, esc: esc,
+    markerElementPos: markerElementPos, markerAt: markerAt, PICK_PX: PICK_PX, esc: esc,
   };
 })();
