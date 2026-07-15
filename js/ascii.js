@@ -22,19 +22,27 @@
     var p = shapes.paramsFor(car);
     // ~0.5 char cell aspect compensation so the trapezoid looks proportional.
     var rows = Math.max(6, Math.round(width * p.aspect * 0.5));
-    var inset = Math.round(((1 - p.top) / 2) * width);
+    // Edge bow is dropped: at this resolution an arch reads like a straight
+    // line, and edgesAt() pinches the edge to a point at y = 0 when bow > 0.
+    var flat = { top: p.top, bottom: p.bottom, bow: 0 };
     var grid = [];
     var r, cLine;
 
+    // Glass edges per row, in columns — taken from the shared geometry, so the
+    // art tapers the way the pane really does: the bottom edge is the far one.
     function edgeCols(row) {
-      // row 0 = top border, row rows = bottom border
-      var f = row / rows;
-      var l = Math.round(inset * (1 - f));
-      return { l: l, r: width - 1 - l };
+      var e = shapes.edgesAt(flat, row / rows);
+      return { l: Math.round(e.left * (width - 1)), r: Math.round(e.right * (width - 1)) };
     }
+    // Without bow each side is a straight line, so one character carries its
+    // whole run: "\" for a side leaning in to the right, "/" to the left, "|"
+    // where the pane doesn't taper. Deciding per row instead would print a
+    // staircase of "|" and "\" on a shallow taper and read as a glitch.
+    var top = edgeCols(0), bot = edgeCols(rows);
+    function slant(from, to) { return to > from ? "\\" : to < from ? "/" : "|"; }
+    var leftCh = slant(top.l, bot.l), rightCh = slant(top.r, bot.r);
 
     // top border: spaces, then '_' with the mirror [=] centered
-    var top = edgeCols(0);
     cLine = new Array(width).fill(" ");
     for (r = top.l + 1; r < top.r; r++) cLine[r] = "_";
     var mid = Math.floor(width / 2);
@@ -45,23 +53,23 @@
     for (r = 1; r < rows; r++) {
       var e = edgeCols(r);
       cLine = new Array(width).fill(" ");
-      cLine[e.l] = inset > 0 ? "/" : "|";
-      cLine[e.r] = inset > 0 ? "\\" : "|";
+      cLine[e.l] = leftCh;
+      cLine[e.r] = rightCh;
       if (r === 1) { cLine[mid] = "|"; } // mirror stalk
       grid.push(cLine);
     }
 
     // bottom border
-    var bot = edgeCols(rows);
     cLine = new Array(width).fill(" ");
-    cLine[bot.l] = inset > 0 ? "/" : "|";
-    cLine[bot.r] = inset > 0 ? "\\" : "|";
+    cLine[bot.l] = leftCh;
+    cLine[bot.r] = rightCh;
     for (r = bot.l + 1; r < bot.r; r++) cLine[r] = "_";
     grid.push(cLine);
 
-    // markers (chips get their 1-based index as label)
+    // markers (chips get their 1-based index as label). Rows 1..rows-1 are the
+    // glass; row 0 and row `rows` are the borders, so a marker never lands on one.
     (car.chips || []).forEach(function (chip, i) {
-      var row = 1 + Math.round(chip.y * (rows - 1));
+      var row = 1 + Math.round(chip.y * (rows - 2));
       var e = edgeCols(row);
       var col = Math.round((e.l + 1) + chip.x * (e.r - e.l - 2));
       col = Math.max(e.l + 1, Math.min(e.r - 1, col));

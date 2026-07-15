@@ -59,21 +59,28 @@
   function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
   // Effective shape params for a car: preset overridden by per-car adjustments.
+  // `adjust` can arrive from a share link, so a value that isn't a real number
+  // falls back to the preset instead of turning the whole pane into NaN — which
+  // renders as an empty SVG with nothing to say why.
   function paramsFor(car) {
     var base = PRESETS[car && car.shape] || PRESETS.sedan;
     var adj = (car && car.adjust) || {};
-    var widthCm = clamp(adj.widthCm != null ? adj.widthCm : base.widthCm, LIMITS.widthCm.min, LIMITS.widthCm.max);
+    function num(v, fallback) { return typeof v === "number" && isFinite(v) ? v : fallback; }
+    function pick(key, dflt) {
+      return clamp(num(adj[key], num(base[key], dflt)), LIMITS[key].min, LIMITS[key].max);
+    }
+    var widthCm = pick("widthCm", 142);
     return {
-      top:    clamp(adj.top    != null ? adj.top    : base.top,    LIMITS.top.min,    LIMITS.top.max),
-      bottom: clamp(adj.bottom != null ? adj.bottom : (base.bottom != null ? base.bottom : 1), LIMITS.bottom.min, LIMITS.bottom.max),
-      aspect: clamp(adj.aspect != null ? adj.aspect : base.aspect, LIMITS.aspect.min, LIMITS.aspect.max),
-      round:  clamp(adj.round  != null ? adj.round  : base.round,  LIMITS.round.min,  LIMITS.round.max),
-      bow:    clamp(adj.bow    != null ? adj.bow    : (base.bow || 0), LIMITS.bow.min, LIMITS.bow.max),
+      top: pick("top", 1),
+      bottom: pick("bottom", 1),
+      aspect: pick("aspect", 0.36),
+      round: pick("round", 0.12),
+      bow: pick("bow", 0),
       widthCm: widthCm,
       // Real height keeps the preset's real proportions when width is adjusted.
-      heightCm: base.heightCm * (widthCm / base.widthCm),
+      heightCm: num(base.heightCm, 85) * (widthCm / num(base.widthCm, 142)),
       // Wheel diameter is absolute — it does not scale with the pane.
-      wheelCm: clamp(adj.wheelCm != null ? adj.wheelCm : (base.wheelCm || 38), LIMITS.wheelCm.min, LIMITS.wheelCm.max),
+      wheelCm: pick("wheelCm", 38),
     };
   }
 

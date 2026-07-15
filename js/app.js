@@ -104,7 +104,7 @@
       var edge = shapes.inMargin(p, k);
       var fov = shapes.inFov(p, k, car().wheel);
       var rec = logic.recommend(k, { inMargin: edge, inFov: fov });
-      var found = (logic.timeline(k)[0] || {}).date || "";
+      var found = logic.foundDate(k);
       var badges = (fov ? "⌖ " : "") + (edge ? "▣ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
       return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '">' +
         "<td>" + (i + 1) + "</td>" +
@@ -153,13 +153,13 @@
     }).join("");
 
     var tlRows = tl.map(function (e) {
-      var line = e.date + " — " + esc(t(EVENT_KEY[e.type] || e.type));
+      var line = esc(e.date) + " — " + esc(t(EVENT_KEY[e.type] || e.type));
       var extra = [];
       if (e.where) extra.push(esc(e.where));
       if (e.note) extra.push("„" + esc(e.note) + "“");
       if (extra.length) line += " · " + extra.join(" · ");
       var del = tl.length > 1 ? '<button class="tl-del" data-act="delEvent" data-id="' + esc(e.id) + '" title="' + esc(t("deleteEvent")) + '">×</button>' : "";
-      return '<li class="tl-' + e.type + '">' + line + del + "</li>";
+      return '<li class="tl-' + esc(e.type) + '">' + line + del + "</li>";
     }).join("");
 
     var addOpts = ADDABLE.map(function (ty) {

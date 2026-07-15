@@ -25,23 +25,14 @@
     return { v: 1, cars: [car], activeCar: car.id };
   }
 
+  // Vet a whole state — from localStorage, a file, or a share link. The cars
+  // themselves are vetted by logic.normalizeCars (shared with the CLI); only
+  // the wrapper around them is this module's business.
   function sanitize(state) {
-    if (!state || state.v !== 1 || !Array.isArray(state.cars)) return null;
-    state.cars = state.cars.filter(function (c) { return c && c.id; });
-    state.cars.forEach(function (c) {
-      if (!Array.isArray(c.chips)) c.chips = [];
-      c.chips = c.chips
-        .filter(function (k) { return k && k.id && typeof k.x === "number" && typeof k.y === "number"; })
-        .map(function (k) {
-          var m = logic.migrateChip(k);
-          if (!Array.isArray(m.events) || !m.events.length) {
-            m.events = [logic.makeEvent("new", new Date().toISOString().slice(0, 10))];
-          }
-          return m;
-        });
-    });
-    if (!state.cars.length) return null;
-    return state;
+    if (!state || state.v !== 1) return null;
+    var cars = logic.normalizeCars(state.cars);
+    if (!cars.length) return null;
+    return { v: 1, cars: cars, activeCar: state.activeCar };
   }
 
   function load() {

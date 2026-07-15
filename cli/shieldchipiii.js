@@ -61,7 +61,8 @@ function encodeToken(state) {
 }
 
 // src = JSON file path, full share URL, or bare token. Legacy chips are
-// migrated to the event-timeline shape on load, same as the browser.
+// migrated and every field vetted on load, same as the browser — a share link
+// off the internet is exactly as untrusted here as it is there.
 function loadState(src) {
   if (!src) throw new Error("missing <src> (JSON file, share URL, or token)");
   let state;
@@ -72,18 +73,17 @@ function loadState(src) {
     const token = hashIdx >= 0 ? src.slice(hashIdx + 1) : src;
     state = decodeToken(token);
   }
-  if (!state || state.v !== 1 || !Array.isArray(state.cars) || !state.cars.length) {
-    throw new Error("not a shieldchipiii payload");
-  }
-  state.cars.forEach((c) => { c.chips = (c.chips || []).map(logic.migrateChip); });
-  return state;
+  if (!state || state.v !== 1) throw new Error("not a shieldchipiii payload");
+  const cars = logic.normalizeCars(state.cars);
+  if (!cars.length) throw new Error("no usable vehicle in the payload");
+  return { v: 1, cars };
 }
 
 // ---------- output ----------
 
 function chipLine(k, i, params, wheel) {
   const status = logic.currentStatus(k);
-  const found = (logic.timeline(k)[0] || {}).date || "";
+  const found = logic.foundDate(k);
   const edgeCm = params ? Math.round(shapes.edgeDistanceCm(params, k)) : null;
   const fov = params ? shapes.inFov(params, k, wheel) : false;
   const cols = [

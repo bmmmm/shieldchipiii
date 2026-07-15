@@ -23,8 +23,12 @@
 
   function isCrack(size) { return /^crack/.test(size || ""); }
 
+  // The status is the chronologically latest status event — the same order the
+  // timeline shows. Reading insertion order instead would let a backdated event
+  // added last override a newer one, and a merge (which appends remote events)
+  // would silently reinstate whatever the other device happened to send last.
   function currentStatus(chip) {
-    var events = (chip && chip.events) || [];
+    var events = timeline(chip);
     for (var i = events.length - 1; i >= 0; i--) {
       if (STATUS_TYPES.indexOf(events[i].type) !== -1) return events[i].type;
     }
@@ -50,6 +54,13 @@
   }
 
   function insuranceReported(chip) { return !!lastEventOfType(chip, "insurance_reported"); }
+
+  // When the chip was found — the "new" event's date, not merely the earliest
+  // one: a note backdated below the find must not rewrite the find date.
+  function foundDate(chip) {
+    var ev = lastEventOfType(chip, "new");
+    return (ev && ev.date) || "";
+  }
 
   // Where the repair criteria come from, so the UI can link them.
   var SOURCES = { carglass: "https://www.carglass.de/steinschlag-reparatur" };
@@ -98,26 +109,91 @@
     return ev;
   }
 
-  // Migrate a legacy v1 chip (flat status/found/repaired*/insurance*/note)
-  // into the event-timeline shape. Idempotent: a chip that already has
-  // `events` is returned untouched.
-  function migrateChip(chip) {
-    if (chip.events && Array.isArray(chip.events)) return chip;
-    var events = [];
-    var found = chip.found || (chip.up ? String(chip.up).slice(0, 10) : "");
-    events.push(makeEvent("new", found));
+  // ---------- untrusted input ----------
+  // A share link, a JSON import and a hand-edited file are all just someone
+  // else's JSON. Everything below is the one gate it passes through, so the
+  // browser and the CLI agree on what a chip may contain. Renderers escape on
+  // top of this; keeping junk out of the model is what stops it reaching them.
+
+  var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  // Field caps match the input maxlengths in the UI.
+  var MAX = { id: 40, name: 40, note: 200, where: 60, up: 30, shape: 20 };
+
+  function cleanText(s, max) {
+    if (typeof s !== "string") return "";
+    // Control characters break the CLI's table and can smuggle terminal escapes.
+    return s.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
+  }
+
+  function today() { return new Date().toISOString().slice(0, 10); }
+
+  // Drop what we can't vouch for: unknown types and junk dates. A missing id
+  // gets a fresh one rather than dropping the event with it.
+  function cleanEvent(ev) {
+    if (!ev || typeof ev !== "object" || ALL_TYPES.indexOf(ev.type) === -1) return null;
+    var out = {
+      id: cleanText(ev.id, MAX.id) || uid("e_"),
+      type: ev.type,
+      date: DATE_RE.test(ev.date) ? ev.date : "",
+    };
+    var note = cleanText(ev.note, MAX.note);
+    var where = cleanText(ev.where, MAX.where);
+    if (note) out.note = note;
+    if (where) out.where = where;
+    return out;
+  }
+
+  // A legacy v1 chip stored its history in flat fields — unfold them into events.
+  function legacyEvents(chip) {
+    var found = cleanText(chip.found, 10) || cleanText(chip.up, 10);
+    var events = [makeEvent("new", found)];
     if (chip.insurance) events.push(makeEvent("insurance_reported", chip.insuranceAt || found));
     if (chip.status === "repaired") {
       events.push(makeEvent("repaired", chip.repairedAt || found, { where: chip.repairedBy || "" }));
     }
     if (chip.note) events.push(makeEvent("note", found, { note: chip.note }));
-    // No fov here: it used to be a stored flag, but it's derived from the
-    // position now (shapes.inFov), so a legacy value is simply dropped.
+    return events;
+  }
+
+  // Any chip — legacy v1, current, or straight off a share link — into the
+  // canonical shape. Returns null for a chip with no usable position: that one
+  // can't be drawn or measured, so there is nothing to keep.
+  // No fov: it used to be a stored flag but is derived from the position now
+  // (shapes.inFov), so a legacy value is simply dropped.
+  function normalizeChip(chip) {
+    if (!chip || typeof chip !== "object") return null;
+    if (!isFinite(chip.x) || !isFinite(chip.y)) return null;
+    var raw = Array.isArray(chip.events) ? chip.events : legacyEvents(chip);
+    var events = raw.map(cleanEvent).filter(Boolean);
+    if (!events.length) events = [makeEvent("new", today())];
     return {
-      id: chip.id, x: chip.x, y: chip.y,
-      size: chip.size || "c10",
-      events: events, up: chip.up || "",
+      id: cleanText(chip.id, MAX.id) || uid("k_"),
+      x: clamp01(chip.x), y: clamp01(chip.y),
+      size: SIZES.indexOf(chip.size) !== -1 ? chip.size : "c10",
+      events: events,
+      up: cleanText(chip.up, MAX.up),
     };
+  }
+
+  function clamp01(v) { return Math.min(1, Math.max(0, Number(v))); }
+
+  // Shape/adjust aren't checked here — geometry belongs to shapes.js, and
+  // paramsFor() clamps every value it takes from `adjust` anyway.
+  function normalizeCar(car) {
+    if (!car || typeof car !== "object" || !car.id) return null;
+    return {
+      id: cleanText(car.id, MAX.id),
+      name: cleanText(car.name, MAX.name),
+      shape: cleanText(car.shape, MAX.shape) || "sedan",
+      adjust: car.adjust && typeof car.adjust === "object" ? car.adjust : null,
+      wheel: car.wheel === "right" ? "right" : "left",
+      chips: (Array.isArray(car.chips) ? car.chips : []).map(normalizeChip).filter(Boolean),
+      up: cleanText(car.up, MAX.up),
+    };
+  }
+
+  function normalizeCars(cars) {
+    return (Array.isArray(cars) ? cars : []).map(normalizeCar).filter(Boolean);
   }
 
   return {
@@ -125,6 +201,7 @@
     STATUS_SYMBOL: STATUS_SYMBOL, SIZES: SIZES, SOURCES: SOURCES,
     isCrack: isCrack, currentStatus: currentStatus, timeline: timeline,
     lastEventOfType: lastEventOfType, insuranceReported: insuranceReported,
-    recommend: recommend, makeEvent: makeEvent, migrateChip: migrateChip, uid: uid,
+    foundDate: foundDate, recommend: recommend, makeEvent: makeEvent, uid: uid,
+    normalizeChip: normalizeChip, normalizeCars: normalizeCars,
   };
 });
