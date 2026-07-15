@@ -8,7 +8,8 @@
 
 Document every stone chip on your car's windshield: position on the glass,
 size, repair status, insurance reporting. Data lives in `localStorage`;
-sharing between devices works via URL token, JSON export — or the terminal.
+sharing between devices works via QR code, URL token, JSON export — or the
+terminal.
 
 **UI is bilingual (DE/EN)**, auto-detected, toggle in the header.
 
@@ -60,9 +61,18 @@ sharing between devices works via URL token, JSON export — or the terminal.
 - **Multiple vehicles** — tabs, each with its own shape and entries. Replacing
   the whole windshield is a vehicle-level action (*Windshield replaced*), not a
   per-chip status — it clears the vehicle's markers for a fresh pane.
-- **Share & backup** — copy a share link (`#i:` = gzip + base64url), export/
-  import JSON, copy the diagram as ASCII art. Importing offers merge
-  (newest edit wins per entry) or replace.
+- **Device sync** — a two-card sync panel: a large QR code (drawn by the
+  dependency-free `js/qr.js`, no CDN), live indicators for vehicles, entries,
+  link size and whether the state still fits a QR code, a one-tap copy
+  button, and a paste field to receive a link from the other device. QR code
+  and share link (`#i:` = gzip + base64url) encode the same complete state.
+- **Merging keeps deletions** — importing offers *Merge (recommended)*:
+  newest edit wins per entry, event timelines are unioned, and deleting a
+  vehicle, a chip or a single event survives the next sync instead of being
+  resurrected by the other device (tombstones travel with the data). On a
+  pristine device the dialog offers a single *Take over* instead, and a toast
+  sums up what a merge did ("1 entry new · 1 deletion kept").
+- **Backup** — export/import JSON, or copy the diagram as ASCII art.
 - **Terminal client** — the same data, rendered as ASCII in your shell.
 - **Community car models** — tweaked the shape to match your car? Click
   *Propose as car model* (under shape tweaking) to open a prefilled
@@ -73,8 +83,8 @@ sharing between devices works via URL token, JSON export — or the terminal.
 
 Open `index.html` in a browser. That's it — no build, no framework, no npm.
 
-Tests: `node test/smoke.js` — no dependencies there either. CI runs it on
-every push.
+Tests: `node test/smoke.js` and `node test/touch-targets.js` — no
+dependencies there either. CI runs both on every push.
 
 Releasing: run `scripts/stamp-assets.sh` first — it stamps the asset URLs in
 `index.html` with the current commit hash, so browsers can't mix cached old
@@ -98,7 +108,8 @@ node cli/shieldchipiii.js encode export.json --base https://example.com/
 `i:`/`j:` token. `add` and `event` print a fresh share URL you can open in the
 browser (merge on import); `--out file.json` also writes the JSON. Whether a
 chip is in the field of view or the edge zone follows from `--x`/`--y` — it's
-read off the position, never passed in.
+read off the position, never passed in. `decode` prints the full state
+including the `gone` tombstones that let deletions survive a merge.
 
 Example output:
 
@@ -121,9 +132,10 @@ the top edge is the near one.
 
 ## Data & privacy
 
-Everything stays in your browser (`localStorage`). The share link contains
-your **complete** data, unencrypted — treat it like the data itself and only
-share it with your own devices.
+Everything stays in your browser (`localStorage`). The share link — and the
+QR code, which encodes the same URL — contains your **complete** data,
+unencrypted: treat both like the data itself and only share them with your
+own devices.
 
 ## Repair rule of thumb (DE)
 
