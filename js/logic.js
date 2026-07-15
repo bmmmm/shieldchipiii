@@ -68,6 +68,33 @@
   // this module stays free of both the country and the link.
   var SOURCED_KEYS = ["recRepairable", "recReplaceFov", "recReplaceEdge", "recReplaceCrack"];
 
+  // Chips whose repair-or-replace question is still open. A repaired one has
+  // answered it, and an irreparable one already forces a replacement by itself
+  // — counting either against the cap would double-report a settled case.
+  var PENDING = ["new", "observing", "repair_planned"];
+
+  function pendingCount(car) {
+    return ((car && car.chips) || []).filter(function (k) {
+      return PENDING.indexOf(currentStatus(k)) !== -1;
+    }).length;
+  }
+
+  // The pane against the country's published cap on how many chips it still
+  // repairs. null when that country publishes no number, or we're under it —
+  // the count only becomes worth saying once it can change the outcome.
+  // maxChips comes from the caller (sources.js) for the same reason the edge
+  // margin does: this module doesn't know about countries.
+  function chipLoad(car, maxChips) {
+    if (!maxChips) return null;
+    var count = pendingCount(car);
+    if (count < maxChips) return null;
+    return {
+      key: count > maxChips ? "loadOver" : "loadAt",
+      level: count > maxChips ? "danger" : "warn",
+      count: count, max: maxChips, sourced: true,
+    };
+  }
+
   // Repair recommendation from current status + geometry + size, following the
   // criteria glass shops use (Carglass): outside the driver's field of view,
   // smaller than a 2-euro coin, and clear of the edge by the country's margin.
@@ -205,6 +232,7 @@
     isCrack: isCrack, currentStatus: currentStatus, timeline: timeline,
     lastEventOfType: lastEventOfType, insuranceReported: insuranceReported,
     foundDate: foundDate, recommend: recommend, makeEvent: makeEvent, uid: uid,
+    pendingCount: pendingCount, chipLoad: chipLoad,
     normalizeChip: normalizeChip, normalizeCars: normalizeCars,
   };
 });

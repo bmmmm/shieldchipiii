@@ -49,6 +49,14 @@ sharing between devices works via URL token, JSON export — or the terminal.
   what the app calls repairable is repairable everywhere (only the threshold is
   renamed where the shop measures with another coin — CHF 2, 2-krone).
   Countries whose criteria could not be verified are absent rather than guessed.
+- **How many chips the pane can take** — Germany, Austria, France, Norway and
+  Sweden cap how many they repair before replacing the glass (3); the other
+  countries publish no number and so get no hint. Reach the cap and the entries
+  list says so, above the table — it's a statement about the pane, not about one
+  marker. Only chips whose repair is still open count: a repaired one has
+  settled the question, an irreparable one already forces a replacement on its
+  own. Adding more is never blocked — the app records what's on the glass, it
+  doesn't ration it.
 - **Multiple vehicles** — tabs, each with its own shape and entries. Replacing
   the whole windshield is a vehicle-level action (*Windshield replaced*), not a
   per-chip status — it clears the vehicle's markers for a fresh pane.
@@ -122,6 +130,8 @@ Punkte stimmen:
 - Er ist **mehr als 10 cm vom Scheibenrand** entfernt — das ist der deutsche
   Wert; andere Länder sind toleranter (s. `js/sources.js`), die App rechnet mit
   dem Wert des eingestellten Landes.
+
+Dazu: **höchstens 3 Steinschläge** auf der Scheibe, sonst wird getauscht.
 
 Ein **Riss** wird gar nicht repariert, unabhängig von der Länge — dann wird die
 Scheibe getauscht.

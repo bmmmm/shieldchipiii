@@ -18,6 +18,9 @@
   "use strict";
 
   // marginCm — the published minimum distance from the edge for a repair.
+  // maxChips — how many chips that country still repairs rather than replacing
+  //            the pane. Only five say a number; the rest are left out rather
+  //            than assumed to mean 3 as well, so no hint is shown there.
   // coin     — i18n key for the size gauge that country measures with, where it
   //            isn't the 2-euro one. The scale itself (c10/c50/e2) stays
   //            euro-based on purpose: every market allows at least a
@@ -26,19 +29,19 @@
   //            only the threshold's name changes where the shop uses another coin.
   var COIN = "coinE2";
   var COUNTRIES = {
-    at: { marginCm: 10, url: "https://www.carglass.at/reparatur-austausch/windschutzscheibe/reparatur-windschutzscheibe" },
+    at: { marginCm: 10, maxChips: 3, url: "https://www.carglass.at/reparatur-austausch/windschutzscheibe/reparatur-windschutzscheibe" },
     be: { marginCm: 6, url: "https://www.carglass.be/nl/autoruitschade/sterretje-voorruit-herstellen" },
     ch: { marginCm: 6, url: "https://www.carglass.ch/de/einen-steinschlag-auf-ihrer-windschutzscheibe-reparieren", coin: "coinChf2" },
     cz: { marginCm: 6, url: "https://carglass.cz/oprava-celniho-skla/" },
-    de: { marginCm: 10, url: "https://www.carglass.de/steinschlag-reparatur" },
+    de: { marginCm: 10, maxChips: 3, url: "https://www.carglass.de/steinschlag-reparatur" },
     dk: { marginCm: 5, url: "https://www.carglass.dk/reparation-af-stenslag", coin: "coinDkk2" },
     es: { marginCm: 2.5, url: "https://www.carglass.es/reparacion-lunas/reparacion-de-parabrisas" },
-    fr: { marginCm: 5, url: "https://www.carglass.fr/nos-services/pare-brise/reparation-d-impact-sur-votre-pare-brise" },
+    fr: { marginCm: 5, maxChips: 3, url: "https://www.carglass.fr/nos-services/pare-brise/reparation-d-impact-sur-votre-pare-brise" },
     it: { marginCm: 6, url: "https://www.carglass.it/vetri/danni-ai-vetri/riparazione-parabrezza-scheggiato" },
     lu: { marginCm: 6, url: "https://www.carglass.lu/bris-de-glace/reparer-eclat-pare-brise" },
-    no: { marginCm: 3, url: "https://www.carglass.no/" },
+    no: { marginCm: 3, maxChips: 3, url: "https://www.carglass.no/" },
     pt: { marginCm: 5, url: "https://www.carglass.pt/vidro-partido" },
-    se: { marginCm: 3, url: "https://www.carglass.se/laga-stenskott" },
+    se: { marginCm: 3, maxChips: 3, url: "https://www.carglass.se/laga-stenskott" },
   };
   var DEFAULT = "de";
   var CODES = Object.keys(COUNTRIES);
@@ -48,6 +51,9 @@
   function criteriaFor(code) { return COUNTRIES[normalize(code)]; }
   function marginCmFor(code) { return criteriaFor(code).marginCm; }
   function coinKeyFor(code) { return criteriaFor(code).coin || COIN; }
+  // null where the country doesn't publish a count — the caller shows nothing
+  // rather than borrowing another country's number.
+  function maxChipsFor(code) { return criteriaFor(code).maxChips || null; }
 
   // Endonym-free country names, in the UI's language — beats carrying 13×2
   // hand-written labels that would drift. Falls back to the bare code where
@@ -72,7 +78,7 @@
   return {
     DEFAULT: DEFAULT, CODES: CODES,
     has: has, normalize: normalize, criteriaFor: criteriaFor,
-    marginCmFor: marginCmFor, coinKeyFor: coinKeyFor,
+    marginCmFor: marginCmFor, coinKeyFor: coinKeyFor, maxChipsFor: maxChipsFor,
     nameFor: nameFor, codesByName: codesByName,
   };
 });

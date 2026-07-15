@@ -33,6 +33,10 @@ const EVENT_LABEL = {
   repaired: "repaired", irreparable: "irreparable",
   insurance_reported: "insurance reported", note: "note",
 };
+const LOAD_LABEL = {
+  loadAt: "{count} open chips — more than {max} usually aren't repaired, the glass gets replaced instead",
+  loadOver: "{count} open chips — usually at most {max} get repaired; a replacement is likely",
+};
 const REC_LABEL = {
   recRepairable: "repairable — insurance often covers it, do it soon",
   recReplaceFov: "no-go zone (driver's view) — repair unlikely, ask a glass service",
@@ -158,6 +162,15 @@ function printCar(car, opts) {
     console.log("     -> " + label);
     cited = cited || !!rec.sourced;
   });
+
+  // A whole-pane verdict, so it goes under the table, not on a chip's line.
+  const load = logic.chipLoad(car, sources.maxChipsFor(country));
+  if (load) {
+    console.log("\n   !! " + LOAD_LABEL[load.key]
+      .replace("{count}", String(load.count)).replace("{max}", String(load.max)));
+    cited = true;
+  }
+
   // Cited once at the bottom rather than per line — same source every time.
   if (cited) console.log("\n   repair criteria (" + country.toUpperCase() + "): " + sources.criteriaFor(country).url);
 }

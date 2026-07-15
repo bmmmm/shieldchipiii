@@ -78,6 +78,10 @@
     recWatchRepair: { de: "Repariert. Beobachten, ob die Stelle hält — reißt sie weiter, ist ein Scheibentausch fällig.", en: "Repaired. Keep an eye on it — if it keeps cracking, a replacement is due." },
     recIrreparable: { de: "Als irreparabel markiert — Scheibentausch veranlassen und mit der Versicherung klären.", en: "Marked irreparable — arrange a glass replacement and clear it with your insurer." },
 
+    // chip count against the country's cap
+    loadAt: { de: "{count} offene Steinschläge — mehr als {max} werden in der Regel nicht repariert, dann wird die Scheibe getauscht. Beim nächsten wird es also eng.", en: "{count} open chips — more than {max} usually aren't repaired; the glass gets replaced instead. One more and it gets tight." },
+    loadOver: { de: "{count} offene Steinschläge — repariert werden in der Regel höchstens {max}. Ein Scheibentausch ist wahrscheinlich, bitte Dienstleister kontaktieren und klären.", en: "{count} open chips — usually at most {max} get repaired. A replacement is likely; contact a glass service to check." },
+
     // marker popup
     fov: { de: "Im Sichtfeld", en: "In field of view" },
     edgeDistance: { de: "Randabstand", en: "Edge distance" },

@@ -135,7 +135,25 @@
     $("wheelRight").classList.toggle("active", c.wheel === "right");
   }
 
+  // The chip count is a statement about the pane, not about any one marker, so
+  // it sits above the table rather than in a popup. Shown only once the count
+  // can change the outcome; adding more is never blocked — the app records what
+  // is on the glass, it doesn't ration it.
+  function renderChipLoad() {
+    var load = logic.chipLoad(car(), sources.maxChipsFor(car().country));
+    if (!load) { $("chipLoad").innerHTML = ""; return; }
+    var vars = countryVars();
+    vars.count = load.count;
+    vars.max = load.max;
+    $("chipLoad").innerHTML = '<div class="rec rec-' + load.level + '">' +
+      esc(t(load.key, vars)) + recSourceLink(load) + "</div>";
+  }
+
+  // Driven from here rather than from rerenderAll: every path that changes a
+  // chip already rebuilds the table, and a count rendered anywhere else would
+  // be the one place that forgets to update.
   function renderChipTable() {
+    renderChipLoad();
     var chips = car().chips;
     if (!chips.length) {
       $("chipTable").innerHTML = '<p class="muted">' + esc(t("noChips")) + "</p>";
