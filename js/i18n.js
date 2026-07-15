@@ -111,6 +111,9 @@
     // device-sync card
     deviceSync: { de: "Mit anderem Gerät teilen", en: "Share with another device" },
     copyLink: { de: "Link kopieren", en: "Copy link" },
+    pasteLabel: { de: "Von anderem Gerät empfangen", en: "Receive from another device" },
+    pastePh: { de: "Link hier einfügen", en: "Paste the link here" },
+    pasteGo: { de: "Importieren", en: "Import" },
     qrFits: { de: "passt in den QR-Code", en: "fits in the QR code" },
     qrTooBig: { de: "zu groß für den QR-Code — Link oder JSON nutzen", en: "too big for the QR code — use the link or JSON" },
 
@@ -135,6 +138,7 @@
     importTakeover: { de: "Übernehmen", en: "Take over" },
     importTakeoverHint: { de: "Dieses Gerät hat noch keine eigenen Daten.", en: "This device has no data of its own yet." },
     importCancel: { de: "Abbrechen", en: "Cancel" },
+    cancel: { de: "Abbrechen", en: "Cancel" },
     importMore: { de: "+ {n} weitere", en: "+ {n} more" },
     importBroken: { de: "Link konnte nicht gelesen werden (beschädigt oder unvollständig kopiert).", en: "Could not read the link (corrupted or copied incompletely)." },
     importFileBroken: { de: "Datei konnte nicht gelesen werden — ist es ein shieldchipiii-JSON-Export?", en: "Could not read the file — is it a shieldchipiii JSON export?" },

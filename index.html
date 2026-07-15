@@ -77,6 +77,13 @@
           <p id="qrCapacity" class="qr-capacity"></p>
           <p id="shareUrlRead" class="muted mono share-url"></p>
           <button id="copyLink" class="primary" data-i18n="copyLink"></button>
+          <div class="paste-import">
+            <label for="pasteLink" class="muted sync-desc" data-i18n="pasteLabel"></label>
+            <div class="paste-row">
+              <input id="pasteLink" type="text" data-i18n-ph="pastePh" autocomplete="off" spellcheck="false">
+              <button id="pasteGo" data-i18n="pasteGo"></button>
+            </div>
+          </div>
         </div>
         <div class="sync-card">
           <h3 data-i18n="backup"></h3>
@@ -118,6 +125,16 @@
         <button id="importMerge" class="primary"></button>
         <button id="importReplace" class="danger" data-i18n="importReplace"></button>
         <button id="importCancel" class="ghost" data-i18n="importCancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmOverlay" class="overlay" hidden>
+    <div class="dialog confirm-dialog" role="alertdialog" aria-labelledby="confirmMsg">
+      <p id="confirmMsg"></p>
+      <div class="import-actions">
+        <button id="confirmOk" class="danger"></button>
+        <button id="confirmCancel" class="ghost" data-i18n="cancel"></button>
       </div>
     </div>
   </div>

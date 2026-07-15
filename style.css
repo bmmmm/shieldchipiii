@@ -229,6 +229,12 @@ button.primary { background: var(--accent); color: var(--bg); border-color: var(
 button.primary:hover { filter: brightness(1.08); border-color: var(--accent); }
 #copyLink { width: 100%; padding: 11px 16px; }
 
+/* receive: paste a link from the other device */
+.paste-import { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
+.paste-import label { display: block; margin: 0 0 6px; }
+.paste-row { display: flex; gap: 8px; }
+#pasteLink { flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; }
+
 .backup-item { margin: 0 0 16px; }
 .backup-item:last-child { margin-bottom: 0; }
 .backup-item > button, .backup-item > .filebtn { display: block; width: 100%; padding: 11px 14px; text-align: center; }
@@ -302,5 +308,5 @@ footer a { color: var(--accent); text-decoration: none; }
   .marker-popup { max-height: 70vh; overflow-y: auto; }
   /* The sync-panel and dialog CTAs are the reach-heavy controls here — give the
      big primary and full-width backup buttons a comfortable floor above 44px. */
-  #copyLink, .backup-item > button, .backup-item > .filebtn, .import-actions button { min-height: 48px; }
+  #copyLink, #pasteGo, .backup-item > button, .backup-item > .filebtn, .import-actions button { min-height: 48px; }
 }

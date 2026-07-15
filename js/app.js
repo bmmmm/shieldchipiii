@@ -322,16 +322,18 @@
     var kind = act.dataset.act;
     if (kind === "close") { closePopup(); return; }
     if (kind === "delChip") {
-      if (!confirm(t("confirmDeleteChip"))) return;
-      var c = car();
-      c.gone = c.gone || {};
-      c.gone[selectedId] = store.now(); // tombstone so a later merge can't resurrect it
-      c.chips = c.chips.filter(function (k) { return k.id !== selectedId; });
-      touchCar();
-      persist();
-      closePopup();
-      renderWindshield();
-      renderChipTable();
+      var delId = selectedId; // captured: the popup may close before the dialog resolves
+      confirmDialog(t("confirmDeleteChip"), t("deleteChip"), function () {
+        var c = car();
+        c.gone = c.gone || {};
+        c.gone[delId] = store.now(); // tombstone so a later merge can't resurrect it
+        c.chips = c.chips.filter(function (k) { return k.id !== delId; });
+        touchCar();
+        persist();
+        closePopup();
+        renderWindshield();
+        renderChipTable();
+      });
       return;
     }
     if (kind === "delEvent") {
@@ -455,29 +457,31 @@
   $("country").addEventListener("change", function () { car().country = this.value; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   $("glassSwap").addEventListener("click", function () {
-    if (!confirm(t("confirmGlassSwap", { count: car().chips.length }))) return;
-    var c = car();
-    c.gone = c.gone || {};
-    var ts = store.now(); // one deletion moment for the whole pane
-    c.chips.forEach(function (k) { c.gone[k.id] = ts; });
-    c.chips = [];
-    touchCar();
-    closePopup();
-    persist();
-    rerenderAll();
+    confirmDialog(t("confirmGlassSwap", { count: car().chips.length }), t("glassSwap"), function () {
+      var c = car();
+      c.gone = c.gone || {};
+      var ts = store.now(); // one deletion moment for the whole pane
+      c.chips.forEach(function (k) { c.gone[k.id] = ts; });
+      c.chips = [];
+      touchCar();
+      closePopup();
+      persist();
+      rerenderAll();
+    });
   });
 
   $("deleteCar").addEventListener("click", function () {
-    if (!confirm(t("confirmDeleteCar"))) return;
-    var gid = car().id;
-    state.gone = state.gone || {};
-    state.gone[gid] = store.now(); // tombstone the car for later merges
-    state.cars = state.cars.filter(function (c) { return c.id !== gid; });
-    if (!state.cars.length) state.cars.push(store.newCar(""));
-    state.activeCar = state.cars[0].id;
-    closePopup();
-    persist();
-    rerenderAll();
+    confirmDialog(t("confirmDeleteCar"), t("deleteCar"), function () {
+      var gid = car().id;
+      state.gone = state.gone || {};
+      state.gone[gid] = store.now(); // tombstone the car for later merges
+      state.cars = state.cars.filter(function (c) { return c.id !== gid; });
+      if (!state.cars.length) state.cars.push(store.newCar(""));
+      state.activeCar = state.cars[0].id;
+      closePopup();
+      persist();
+      rerenderAll();
+    });
   });
 
   // ---------- glass: add / select / drag ----------
@@ -559,13 +563,14 @@
   // The glass and table run their own selection logic, so they're excluded.
   document.addEventListener("pointerdown", function (e) {
     if (popup.hidden) return;
-    if (e.target.closest("#markerPopup, #windshield, #chipTable")) return;
+    if (e.target.closest("#markerPopup, #windshield, #chipTable, #confirmOverlay")) return;
     closePopup();
   });
 
   // Escape backs out of whatever is floating on top, innermost first.
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
+    if (!$("confirmOverlay").hidden) { closeConfirm(); return; }
     if (!$("importOverlay").hidden) { $("importOverlay").hidden = true; return; }
     if (!popup.hidden) closePopup();
   });
@@ -668,6 +673,26 @@
     toastTimer = setTimeout(function () { el.hidden = true; }, 4000);
   }
 
+  // ---------- confirm dialog ----------
+
+  // Replaces native confirm(): consistent with the app's own dialogs, and the
+  // OK button names the action it confirms instead of a generic "OK".
+  var confirmYes = null;
+  function confirmDialog(msg, okLabel, onYes) {
+    $("confirmMsg").textContent = msg;
+    $("confirmOk").textContent = okLabel;
+    confirmYes = onYes;
+    $("confirmOverlay").hidden = false;
+    $("confirmCancel").focus(); // safe default for a destructive question
+  }
+  function closeConfirm() { $("confirmOverlay").hidden = true; confirmYes = null; }
+  $("confirmOk").addEventListener("click", function () {
+    var fn = confirmYes;
+    closeConfirm();
+    if (fn) fn();
+  });
+  $("confirmCancel").addEventListener("click", closeConfirm);
+
   // ---------- import dialog + URL hash ----------
 
   // A brand-new install is exactly the default state: one unnamed, empty car and
@@ -745,6 +770,25 @@
     catch (e) { toast(t("importBroken"), "danger"); }
   }
   window.addEventListener("hashchange", handleHash);
+
+  // ---------- receive: paste a link from the other device ----------
+
+  // Accepts a full share URL or a bare i:/j: token — the same import path the
+  // URL hash takes, minus the address bar.
+  async function importFromText(text) {
+    var m = (text || "").match(/[ij]:[A-Za-z0-9_-]+/);
+    if (!m) { toast(t("importBroken"), "danger"); return; }
+    try {
+      showImportDialog(await share.decodeToken(m[0]));
+      $("pasteLink").value = "";
+    } catch (e) { toast(t("importBroken"), "danger"); }
+  }
+  $("pasteGo").addEventListener("click", function () { importFromText($("pasteLink").value); });
+  $("pasteLink").addEventListener("keydown", function (e) { if (e.key === "Enter") importFromText(this.value); });
+  $("pasteLink").addEventListener("paste", function () {
+    var el = this;
+    setTimeout(function () { importFromText(el.value); }, 0); // the value lands after the paste event
+  });
 
   // ---------- boot ----------
   rerenderAll();
