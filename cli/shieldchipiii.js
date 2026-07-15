@@ -27,10 +27,9 @@ const EVENT_LABEL = {
 };
 const REC_LABEL = {
   recRepairable: "repairable — insurance often covers it, do it soon",
-  recBorderline: "borderline — have a shop check repair vs. replace",
   recReplaceFov: "no-go zone (driver's view) — repair unlikely, ask a glass service",
   recReplaceEdge: "no-go zone (< 10 cm from the edge) — repair unlikely, ask a glass service",
-  recReplaceBig: "crack over 5 cm — repair unlikely, ask a glass service",
+  recReplaceCrack: "crack — not repaired as a rule, ask a glass service",
   recPlanned: "repair planned — keep the appointment, avoid temp shocks",
   recWatchRepair: "repaired — watch that it holds",
   recIrreparable: "irreparable — arrange a glass replacement",

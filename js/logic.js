@@ -67,10 +67,10 @@
     // new / observing: decide reparability from position + size.
     if (opts && opts.inMargin) return { key: "recReplaceEdge", level: "danger" };
     if (opts && opts.inFov) return { key: "recReplaceFov", level: "danger" };
-    var size = chip.size;
-    if (size === "crackL") return { key: "recReplaceBig", level: "danger" };
-    if (size === "crackM") return { key: "recBorderline", level: "warn" };
-    return { key: "recRepairable", level: "ok" }; // small, outside FOV, off the rim
+    // Any crack means replacement, regardless of length — shops don't repair
+    // cracks at all, so the crack sizes only grade the marker, not the advice.
+    if (isCrack(chip.size)) return { key: "recReplaceCrack", level: "danger" };
+    return { key: "recRepairable", level: "ok" }; // chip up to a 2-euro coin, outside FOV, off the rim
   }
 
   function uid(prefix) {
