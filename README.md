@@ -33,12 +33,22 @@ sharing between devices works via URL token, JSON export — or the terminal.
   recommendation**.
 - **Repairable or not, by the shop's rules** — the diagram marks the two zones
   where a repair is normally refused: the **29 cm field of view** (a DIN A4
-  sheet on its side, above the wheel) and the **10 cm edge margin**, where the
-  glass is under stress. Both are real centimetres: each preset carries the
-  pane's real size (`widthCm`/`heightCm`, adjustable), so 10 cm covers more of
-  a small pane than of a large one, and the margin is drawn thinner top/bottom
-  because the view from inside is foreshortened. The popup shows each chip's
-  edge distance in cm.
+  sheet on its side, above the wheel) and the **edge margin**, where the glass
+  is under stress. Both are real centimetres: each preset carries the pane's
+  real size (`widthCm`/`heightCm`, adjustable), so the margin covers more of a
+  small pane than of a large one, and it is drawn thinner top/bottom because the
+  view from inside is foreshortened. The popup shows each chip's edge distance
+  in cm.
+- **Criteria follow the country** — Carglass publishes different numbers per
+  market, and the edge margin is where they diverge: 10 cm in Germany and
+  Austria, 6 cm in Switzerland, Belgium and Italy, 5 cm in France, Portugal and
+  Denmark, 3 cm in Norway and Sweden, 2.5 cm in Spain. Pick the country and the
+  drawn zone, the verdicts and the cited page all move with it — the ⓘ next to a
+  recommendation opens that country's own criteria page. The size scale stays
+  euro-based on purpose: every market allows at least a 2-euro-sized chip, so
+  what the app calls repairable is repairable everywhere (only the threshold is
+  renamed where the shop measures with another coin — CHF 2, 2-krone).
+  Countries whose criteria could not be verified are absent rather than guessed.
 - **Multiple vehicles** — tabs, each with its own shape and entries. Replacing
   the whole windshield is a vehicle-level action (*Windshield replaced*), not a
   per-chip status — it clears the vehicle's markers for a fresh pane.
@@ -109,7 +119,12 @@ Punkte stimmen:
 - Der Schaden ist **kleiner als eine 2-Euro-Münze**.
 - Er liegt **außerhalb des Sichtfelds** — ein 29 cm breiter Bereich (DIN A4
   quer) über dem Lenkrad.
-- Er ist **mehr als 10 cm vom Scheibenrand** entfernt.
+- Er ist **mehr als 10 cm vom Scheibenrand** entfernt — das ist der deutsche
+  Wert; andere Länder sind toleranter (s. `js/sources.js`), die App rechnet mit
+  dem Wert des eingestellten Landes.
+
+Ein **Riss** wird gar nicht repariert, unabhängig von der Länge — dann wird die
+Scheibe getauscht.
 
 Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur,
 den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko

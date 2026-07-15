@@ -4,6 +4,7 @@
   "use strict";
   var shapes = window.SC.shapes;
   var logic = window.SC.logic;
+  var sources = window.SC.sources;
 
   // CSS marker class per current status.
   var STATUS_CLASS = {
@@ -70,12 +71,13 @@
     // glass
     parts.push('<path class="glass" d="' + outline + '"/>');
 
-    // 10 cm edge margin: the ring between the outline and its inward offset.
-    // The inset is wound the opposite way and filled non-zero, so where the
-    // offset self-intersects in the sharp lower corners the loop still counts
-    // as margin instead of being punched out as a hole (even-odd would).
-    // Clipped to the glass: the sampled outline ignores corner rounding.
-    var inset = shapes.marginInset(p).slice().reverse();
+    // Edge margin (width per the car's country): the ring between the outline
+    // and its inward offset. The inset is wound the opposite way and filled
+    // non-zero, so where the offset self-intersects in the sharp lower corners
+    // the loop still counts as margin instead of being punched out as a hole
+    // (even-odd would). Clipped to the glass: the sampled outline ignores
+    // corner rounding.
+    var inset = shapes.marginInset(p, sources.marginCmFor(car.country)).slice().reverse();
     var insetPath = inset.map(function (q, i) {
       return (i === 0 ? "M" : "L") + (q[0] * BOTTOM_W).toFixed(1) + "," + (q[1] * h).toFixed(1);
     }).join("") + "Z";

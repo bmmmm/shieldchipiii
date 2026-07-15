@@ -62,20 +62,20 @@
     return (ev && ev.date) || "";
   }
 
-  // Where the repair criteria come from, so the UI can link them.
-  var SOURCES = { carglass: "https://www.carglass.de/steinschlag-reparatur" };
-  // Advice taken from those published criteria — as opposed to the
-  // status-driven advice below, which is our own and gets no citation.
+  // Advice taken from the shop's published criteria — as opposed to the
+  // status-driven advice below, which is our own and gets no citation. The URL
+  // itself lives in sources.js, keyed by country: the caller resolves it, so
+  // this module stays free of both the country and the link.
   var SOURCED_KEYS = ["recRepairable", "recReplaceFov", "recReplaceEdge", "recReplaceCrack"];
 
   // Repair recommendation from current status + geometry + size, following the
   // criteria glass shops use (Carglass): outside the driver's field of view,
-  // smaller than a 2-euro coin, and more than 10 cm from the edge.
-  // Returns { key, level, source? } — key is an i18n key, level ∈ ok|warn|danger
-  // drives color, source is a SOURCES id when the rule is someone else's.
+  // smaller than a 2-euro coin, and clear of the edge by the country's margin.
+  // Returns { key, level, sourced } — key is an i18n key, level ∈ ok|warn|danger
+  // drives color, sourced marks advice that a shop's page backs.
   function recommend(chip, opts) {
     var rec = advise(chip, opts);
-    if (SOURCED_KEYS.indexOf(rec.key) !== -1) rec.source = "carglass";
+    if (SOURCED_KEYS.indexOf(rec.key) !== -1) rec.sourced = true;
     return rec;
   }
 
@@ -117,7 +117,7 @@
 
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   // Field caps match the input maxlengths in the UI.
-  var MAX = { id: 40, name: 40, note: 200, where: 60, up: 30, shape: 20 };
+  var MAX = { id: 40, name: 40, note: 200, where: 60, up: 30, shape: 20, country: 2 };
 
   function cleanText(s, max) {
     if (typeof s !== "string") return "";
@@ -178,7 +178,9 @@
   function clamp01(v) { return Math.min(1, Math.max(0, Number(v))); }
 
   // Shape/adjust aren't checked here — geometry belongs to shapes.js, and
-  // paramsFor() clamps every value it takes from `adjust` anyway.
+  // paramsFor() clamps every value it takes from `adjust` anyway. Country is
+  // the same deal: sources.normalize() decides what's a country we have
+  // criteria for, so an unknown code survives the trip and falls back on read.
   function normalizeCar(car) {
     if (!car || typeof car !== "object" || !car.id) return null;
     return {
@@ -187,6 +189,7 @@
       shape: cleanText(car.shape, MAX.shape) || "sedan",
       adjust: car.adjust && typeof car.adjust === "object" ? car.adjust : null,
       wheel: car.wheel === "right" ? "right" : "left",
+      country: cleanText(car.country, MAX.country).toLowerCase(),
       chips: (Array.isArray(car.chips) ? car.chips : []).map(normalizeChip).filter(Boolean),
       up: cleanText(car.up, MAX.up),
     };
@@ -198,7 +201,7 @@
 
   return {
     STATUS_TYPES: STATUS_TYPES, NEUTRAL_TYPES: NEUTRAL_TYPES, ALL_TYPES: ALL_TYPES,
-    STATUS_SYMBOL: STATUS_SYMBOL, SIZES: SIZES, SOURCES: SOURCES,
+    STATUS_SYMBOL: STATUS_SYMBOL, SIZES: SIZES,
     isCrack: isCrack, currentStatus: currentStatus, timeline: timeline,
     lastEventOfType: lastEventOfType, insuranceReported: insuranceReported,
     foundDate: foundDate, recommend: recommend, makeEvent: makeEvent, uid: uid,

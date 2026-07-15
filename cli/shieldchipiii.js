@@ -10,11 +10,19 @@ const zlib = require("zlib");
 const shapes = require(path.join(__dirname, "..", "js", "shapes.js"));
 const logic = require(path.join(__dirname, "..", "js", "logic.js"));
 const ascii = require(path.join(__dirname, "..", "js", "ascii.js"));
+const sources = require(path.join(__dirname, "..", "js", "sources.js"));
 
+const COIN_LABEL = { coinE2: "2-euro coin", coinChf2: "CHF 2 coin", coinDkk2: "2-krone coin" };
 const SIZE_LABEL = {
-  c10: "< 10-cent coin", c50: "< 50-cent coin", e2: "< 2-euro coin",
+  c10: "< 10-cent coin", c50: "< 50-cent coin",
   crackS: "crack ~2cm", crackM: "crack ~5cm", crackL: "crack >5cm",
 };
+// e2 is the repair threshold and gets named after the coin the car's country
+// measures with, so it can't live in the table above.
+function sizeLabel(size, country) {
+  if (size === "e2") return "< " + COIN_LABEL[sources.coinKeyFor(country)];
+  return SIZE_LABEL[size] || size;
+}
 const SIZES = logic.SIZES;
 const STATUS_LABEL = {
   new: "open", observing: "observing", repair_planned: "repair planned",
@@ -28,7 +36,7 @@ const EVENT_LABEL = {
 const REC_LABEL = {
   recRepairable: "repairable — insurance often covers it, do it soon",
   recReplaceFov: "no-go zone (driver's view) — repair unlikely, ask a glass service",
-  recReplaceEdge: "no-go zone (< 10 cm from the edge) — repair unlikely, ask a glass service",
+  recReplaceEdge: "no-go zone (< {cm} cm from the edge) — repair unlikely, ask a glass service",
   recReplaceCrack: "crack — not repaired as a rule, ask a glass service",
   recPlanned: "repair planned — keep the appointment, avoid temp shocks",
   recWatchRepair: "repaired — watch that it holds",
@@ -100,7 +108,7 @@ function loadState(src) {
 
 // ---------- output ----------
 
-function chipLine(k, i, params, wheel) {
+function chipLine(k, i, params, wheel, country) {
   const status = logic.currentStatus(k);
   const found = logic.foundDate(k);
   const edgeCm = params ? Math.round(shapes.edgeDistanceCm(params, k)) : null;
@@ -108,7 +116,7 @@ function chipLine(k, i, params, wheel) {
   const cols = [
     String(i + 1).padStart(2),
     ascii.markerChar(k),
-    (SIZE_LABEL[k.size] || k.size).padEnd(15),
+    sizeLabel(k.size, country).padEnd(15),
     (STATUS_LABEL[status] || status).padEnd(15),
     found.padEnd(10),
     fov ? "FOV" : "   ",
@@ -128,26 +136,30 @@ function timelineLines(k) {
 }
 
 function printCar(car, opts) {
+  const country = sources.normalize(opts.country || car.country);
+  const marginCm = sources.marginCmFor(country);
   console.log("");
-  console.log("== " + (car.name || "(unnamed vehicle)") + " ==  [" + (car.shape || "sedan") + ", wheel " + (car.wheel || "left") + "]");
+  console.log("== " + (car.name || "(unnamed vehicle)") + " ==  [" + (car.shape || "sedan") +
+    ", wheel " + (car.wheel || "left") + ", " + country.toUpperCase() + "]");
   console.log("");
   console.log(ascii.renderAscii(car, { width: opts.width }).replace(/^/gm, "   "));
   console.log("");
   if (!car.chips.length) { console.log("  (no entries)"); return; }
   const params = shapes.paramsFor(car);
   console.log("   # sym size            status          found      fov  edge ins");
-  const sources = new Set();
+  let cited = false;
   car.chips.forEach((k, i) => {
-    console.log(chipLine(k, i, params, car.wheel));
+    console.log(chipLine(k, i, params, car.wheel, country));
     const rec = logic.recommend(k, {
-      inMargin: shapes.inMargin(params, k),
+      inMargin: shapes.inMargin(params, k, marginCm),
       inFov: shapes.inFov(params, k, car.wheel),
     });
-    console.log("     -> " + (REC_LABEL[rec.key] || rec.key));
-    if (rec.source) sources.add(logic.SOURCES[rec.source]);
+    const label = (REC_LABEL[rec.key] || rec.key).replace("{cm}", String(marginCm));
+    console.log("     -> " + label);
+    cited = cited || !!rec.sourced;
   });
   // Cited once at the bottom rather than per line — same source every time.
-  sources.forEach((url) => console.log("\n   repair criteria: " + url));
+  if (cited) console.log("\n   repair criteria (" + country.toUpperCase() + "): " + sources.criteriaFor(country).url);
 }
 
 function findCar(state, sel) {
@@ -195,8 +207,8 @@ function emit(state, flags) {
 const USAGE = `shieldchipiii — windshield stone chip logbook (terminal client)
 
 Usage:
-  shieldchipiii.js show  <src> [--car <name|nr>] [--width N]
-  shieldchipiii.js list  <src> [--car <name|nr>]        table + full timeline
+  shieldchipiii.js show  <src> [--car <name|nr>] [--width N] [--country XX]
+  shieldchipiii.js list  <src> [--car <name|nr>] [--country XX]  table + timeline
   shieldchipiii.js add   <src> --x <0..1> --y <0..1> [--car <name|nr>]
                    [--size ${SIZES.join("|")}]
                    [--status ${logic.STATUS_TYPES.join("|")}]
@@ -212,8 +224,10 @@ Usage:
 x/y are fractions: x = 0 (left edge) .. 1 (right edge at the chip's height),
 y = 0 (top) .. 1 (bottom). Example: --x 0.3 --y 0.6
 Marker symbols: o=open ?=observing @=planned *=repaired X=irreparable
-The edge column is the distance to the nearest edge; under 10 cm a repair is
-unlikely — a glass service has to decide.`;
+The edge column is the distance to the nearest edge. How close is too close is
+the shop's call and differs per country — the vehicle carries its own, and
+--country XX judges it by another one instead. A glass service decides in the end.
+Countries with known criteria: ${sources.CODES.join(" ")}`;
 
 // ---------- main ----------
 
@@ -231,23 +245,30 @@ function main() {
   }
 
   const state = loadState(pos[1]);
+  // An unknown code would silently fall back to the default and quietly judge
+  // by the wrong rule — say so instead.
+  const override = flags.country ? String(flags.country).toLowerCase() : null;
+  if (override && !sources.has(override)) {
+    die("--country '" + flags.country + "' has no known repair criteria — one of: " + sources.CODES.join(", "));
+  }
 
   switch (cmd) {
     case "show": {
       const cars = flags.car ? [findCar(state, flags.car)] : state.cars;
       const width = Math.max(30, Math.min(120, parseInt(flags.width, 10) || 58));
-      cars.forEach((c) => printCar(c, { width }));
+      cars.forEach((c) => printCar(c, { width, country: override }));
       console.log("\n  o=open ?=observing @=planned *=repaired X=irreparable · [=]=mirror (O)=wheel");
       break;
     }
     case "list": {
       const cars = flags.car ? [findCar(state, flags.car)] : state.cars;
       cars.forEach((c) => {
-        console.log("== " + (c.name || "(unnamed vehicle)") + " ==");
+        const country = sources.normalize(override || c.country);
+        console.log("== " + (c.name || "(unnamed vehicle)") + " ==  [" + country.toUpperCase() + "]");
         if (!c.chips.length) console.log("  (no entries)");
         const params = shapes.paramsFor(c);
         c.chips.forEach((k, i) => {
-          console.log(chipLine(k, i, params, c.wheel));
+          console.log(chipLine(k, i, params, c.wheel, country));
           timelineLines(k).forEach((l) => console.log(l));
         });
       });

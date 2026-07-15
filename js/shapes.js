@@ -41,9 +41,9 @@
   var PRESET_ORDER = ["compact", "sedan", "suv", "van", "sport"];
 
   // Glass-shop criteria (Carglass): a chip is only repairable when it sits
-  // more than MARGIN_CM from the edge and outside the FOV_CM wide band over
-  // the wheel. Both are real centimetres — hence widthCm/heightCm above.
-  var MARGIN_CM = 10;
+  // clear of the edge and outside the FOV_CM wide band over the wheel. Both are
+  // real centimetres — hence widthCm/heightCm above. The edge margin is not a
+  // constant here: it differs per country (sources.js) and is passed in.
   var FOV_CM = 29; // DIN A4 long edge
 
   var LIMITS = {
@@ -170,15 +170,17 @@
     return min;
   }
 
-  // Chips closer than MARGIN_CM to the edge can't be repaired — the glass has
-  // to be replaced (stress concentrates at the rim).
-  function inMargin(params, chip) { return edgeDistanceCm(params, chip) < MARGIN_CM; }
+  // Chips closer than marginCm to the edge can't be repaired — the glass has
+  // to be replaced (stress concentrates at the rim). marginCm comes from the
+  // car's country, so it is required: defaulting it here would silently judge
+  // a Spanish chip (2.5 cm) by the German rule (10 cm).
+  function inMargin(params, chip, marginCm) { return edgeDistanceCm(params, chip) < marginCm; }
 
   // The margin band as an inward offset of the outline, in bounding-box
-  // fractions: each sample steps MARGIN_CM along its inward normal, computed
-  // in cm space so the band is 10 cm everywhere on the real pane (which means
-  // it looks thinner top/bottom in the foreshortened drawing — correct).
-  function marginInset(params) {
+  // fractions: each sample steps marginCm along its inward normal, computed in
+  // cm space so the band is that many cm everywhere on the real pane (which
+  // means it looks thinner top/bottom in the foreshortened drawing — correct).
+  function marginInset(params, marginCm) {
     var pts = outlineSamples(params, 24);
     var W = params.widthCm, H = params.heightCm;
     var n = pts.length;
@@ -188,7 +190,7 @@
       var len = Math.sqrt(tx * tx + ty * ty) || 1;
       // clockwise outline -> inward normal is the tangent rotated (x,y)->(-y,x)
       var nx = -ty / len, ny = tx / len;
-      return [p[0] + (nx * MARGIN_CM) / W, p[1] + (ny * MARGIN_CM) / H];
+      return [p[0] + (nx * marginCm) / W, p[1] + (ny * marginCm) / H];
     });
   }
 
@@ -293,7 +295,7 @@
 
   return {
     PRESETS: PRESETS, PRESET_ORDER: PRESET_ORDER, LIMITS: LIMITS,
-    MARGIN_CM: MARGIN_CM, FOV_CM: FOV_CM,
+    FOV_CM: FOV_CM,
     paramsFor: paramsFor, corners: corners, edgesAt: edgesAt,
     outlineSamples: outlineSamples, edgeDistanceCm: edgeDistanceCm,
     inMargin: inMargin, marginInset: marginInset,

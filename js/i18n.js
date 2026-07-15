@@ -32,7 +32,8 @@
     wheelRight: { de: "rechts", en: "right" },
     legendNoRepair: { de: "Rot = verbotener Bereich, Reparatur unwahrscheinlich:", en: "Red = no-go zone, repair unlikely:" },
     legendFov: { de: "Sichtfeld Fahrer:in, 29 cm", en: "driver's field of view, 29 cm" },
-    legendMargin: { de: "Randzone, 10 cm", en: "edge zone, 10 cm" },
+    legendMargin: { de: "Randzone, {cm} cm", en: "edge zone, {cm} cm" },
+    country: { de: "Land", en: "Country" },
     chips: { de: "Einträge", en: "Entries" },
     noChips: { de: "Noch keine Einträge — klick auf die Scheibe.", en: "No entries yet — click the glass." },
 
@@ -40,7 +41,12 @@
     size: { de: "Größe", en: "Size" },
     sizeC10: { de: "< 10-Cent-Münze", en: "< 10-cent coin" },
     sizeC50: { de: "< 50-Cent-Münze", en: "< 50-cent coin" },
-    sizeE2: { de: "< 2-Euro-Münze", en: "< 2-euro coin" },
+    // The repair threshold, named after the coin the local shop measures with
+    // (sources.js). Kept apart from the "< …" label because the rule text names
+    // the coin in a sentence.
+    coinE2: { de: "2-Euro-Münze", en: "2-euro coin" },
+    coinChf2: { de: "CHF-2-Münze", en: "CHF 2 coin" },
+    coinDkk2: { de: "2-Kronen-Münze", en: "2-krone coin" },
     sizeCrackS: { de: "Riss klein (~2 cm)", en: "crack, small (~2 cm)" },
     sizeCrackM: { de: "Riss mittel (~5 cm)", en: "crack, medium (~5 cm)" },
     sizeCrackL: { de: "Riss groß (> 5 cm)", en: "crack, large (> 5 cm)" },
@@ -63,10 +69,10 @@
 
     // recommendations
     recommendation: { de: "Empfehlung", en: "Recommendation" },
-    recSource: { de: "Kriterien laut Carglass — Quelle öffnen", en: "Criteria per Carglass — open the source (in German)" },
+    recSource: { de: "Kriterien laut Carglass {country} — Quelle öffnen", en: "Criteria per Carglass {country} — open the source" },
     recRepairable: { de: "Wahrscheinlich reparierbar. Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung — zeitnah machen lassen, bevor der Chip reißt.", en: "Likely repairable. Comprehensive insurance often covers the repair with no deductible — get it done soon, before it cracks." },
     recReplaceFov: { de: "Steinschlag im verbotenen Bereich: im direkten Sichtfeld der Fahrer:in (eine Reparaturspur würde die Sicht stören). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: in the driver's direct field of view (a repair mark would blur the view). A repair is unlikely — contact a glass service to check." },
-    recReplaceEdge: { de: "Steinschlag im verbotenen Bereich: weniger als 10 cm vom Scheibenrand (dort sitzt die Spannung im Glas). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: less than 10 cm from the edge (that's where the glass is under stress). A repair is unlikely — contact a glass service to check." },
+    recReplaceEdge: { de: "Steinschlag im verbotenen Bereich: weniger als {cm} cm vom Scheibenrand (dort sitzt die Spannung im Glas). Reparatur unwahrscheinlich — bitte Dienstleister kontaktieren und klären.", en: "Chip in the no-go zone: less than {cm} cm from the edge (that's where the glass is under stress). A repair is unlikely — contact a glass service to check." },
     recReplaceCrack: { de: "Risse werden aus Sicherheitsgründen in der Regel nicht repariert, sondern die Scheibe wird getauscht — unabhängig von der Länge. Bitte Dienstleister kontaktieren und klären.", en: "Cracks generally aren't repaired for safety reasons — the glass gets replaced instead, whatever the length. Contact a glass service to check." },
     recPlanned: { de: "Reparatur geplant — Termin wahrnehmen, die Stelle bis dahin schonen (starke Temperaturwechsel und Waschanlage meiden).", en: "Repair planned — keep the appointment; until then avoid temperature shocks and car washes." },
     recWatchRepair: { de: "Repariert. Beobachten, ob die Stelle hält — reißt sie weiter, ist ein Scheibentausch fällig.", en: "Repaired. Keep an eye on it — if it keeps cracking, a replacement is due." },
@@ -106,7 +112,7 @@
     importFileBroken: { de: "Datei konnte nicht gelesen werden — ist es ein shieldchipiii-JSON-Export?", en: "Could not read the file — is it a shieldchipiii JSON export?" },
 
     ruleTitle: { de: "Faustregel Reparatur", en: "Repair rule of thumb" },
-    ruleBody: { de: "Reparatur statt Tausch geht in der Regel nur, wenn alle drei Punkte stimmen: der Schaden ist kleiner als eine 2-Euro-Münze, er liegt außerhalb des Sichtfelds (29 cm breiter Bereich — eine DIN-A4-Seite quer — über dem Lenkrad), und er ist mehr als 10 cm vom Scheibenrand entfernt. Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur, den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — entschieden wird in der Werkstatt.", en: "A repair instead of a replacement usually needs all three to hold: the damage is smaller than a 2-euro coin (~1 inch), it sits outside the field of view (a 29 cm band — a DIN A4 sheet on its side — above the wheel), and it is more than 10 cm from the edge. If one fails, a repair is unlikely — contact a glass service and have them check. Comprehensive insurance often covers the repair fully. No guarantee — the shop decides." },
+    ruleBody: { de: "Reparatur statt Tausch geht in der Regel nur, wenn alle drei Punkte stimmen: der Schaden ist kleiner als eine {coin}, er liegt außerhalb des Sichtfelds (29 cm breiter Bereich — eine DIN-A4-Seite quer — über dem Lenkrad), und er ist mehr als {cm} cm vom Scheibenrand entfernt. Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur, den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — entschieden wird in der Werkstatt.", en: "A repair instead of a replacement usually needs all three to hold: the damage is smaller than a {coin}, it sits outside the field of view (a 29 cm band — a DIN A4 sheet on its side — above the wheel), and it is more than {cm} cm from the edge. If one fails, a repair is unlikely — contact a glass service and have them check. Comprehensive insurance often covers the repair fully. No guarantee — the shop decides." },
     footerLocal: { de: "kein Server · kein Tracking · alles lokal", en: "no server · no tracking · all local" },
   };
 

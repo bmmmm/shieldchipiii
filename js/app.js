@@ -3,6 +3,7 @@
   "use strict";
   var store = window.SC.store, shapes = window.SC.shapes, render = window.SC.render;
   var share = window.SC.share, i18n = window.SC.i18n, ascii = window.SC.ascii, logic = window.SC.logic;
+  var sources = window.SC.sources;
   var t = i18n.t;
 
   var state = store.load();
@@ -16,6 +17,14 @@
 
   var SHAPE_KEY = { compact: "shapeCompact", sedan: "shapeSedan", suv: "shapeSuv", van: "shapeVan", sport: "shapeSport" };
   var SIZE_KEY = { c10: "sizeC10", c50: "sizeC50", e2: "sizeE2", crackS: "sizeCrackS", crackM: "sizeCrackM", crackL: "sizeCrackL" };
+
+  // The repair threshold is named after a coin, and not every market measures
+  // with the 2-euro one — Switzerland says CHF 2, Denmark a 2-krone. Same
+  // stored size, different gauge on the label.
+  function sizeLabel(size) {
+    if (size === "e2") return "< " + t(sources.coinKeyFor(car().country));
+    return t(SIZE_KEY[size] || size);
+  }
   var STATUS_KEY = {
     new: "statusNew", observing: "statusObserving", repair_planned: "statusRepairPlanned",
     repaired: "statusRepaired", irreparable: "statusIrreparable",
@@ -39,9 +48,21 @@
 
   // ---------- static + structural rendering ----------
 
+  // The numbers the active car's country brings with it. Passed to every text
+  // lookup: t() only substitutes what a string actually names, so a text can
+  // start or stop citing the margin without its callers knowing.
+  function countryVars() {
+    var code = car().country;
+    return {
+      cm: sources.marginCmFor(code).toLocaleString(i18n.get()),
+      coin: t(sources.coinKeyFor(code)),
+    };
+  }
+
   function applyStaticI18n() {
     document.documentElement.lang = i18n.get();
-    document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t(el.dataset.i18n); });
+    var vars = countryVars();
+    document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t(el.dataset.i18n, vars); });
     document.querySelectorAll("[data-i18n-ph]").forEach(function (el) { el.placeholder = t(el.dataset.i18nPh); });
     $("langToggle").textContent = i18n.get() === "de" ? "EN" : "DE";
   }
@@ -59,7 +80,8 @@
       ['<span class="lg edge">▒</span>', "legendMargin"],
       ['<span class="lg fov">▒</span>', "legendFov"],
     ];
-    var fmt = function (it) { return it[0] + " " + esc(t(it[1])); };
+    var vars = countryVars();
+    var fmt = function (it) { return it[0] + " " + esc(t(it[1], vars)); };
     $("legend").innerHTML = statuses.map(fmt).join(" · ") +
       '<span class="legend-zones"><strong>' + esc(t("legendNoRepair")) + "</strong> " + zones.map(fmt).join(" · ") + "</span>";
   }
@@ -82,11 +104,24 @@
     }).join("");
   }
 
+  // Country options, named in the UI's language and sorted by that name.
+  // Rebuilt on language switch, hence not baked into index.html.
+  function renderCountry() {
+    var c = car();
+    var lang = i18n.get();
+    var active = sources.normalize(c.country);
+    $("country").innerHTML = sources.codesByName(lang).map(function (code) {
+      return '<option value="' + code + '"' + (code === active ? " selected" : "") + ">" +
+        esc(sources.nameFor(code, lang)) + "</option>";
+    }).join("");
+  }
+
   function renderCarForm() {
     var c = car();
     $("carName").value = c.name;
     var p = shapes.paramsFor(c);
     renderShapeButtons();
+    renderCountry();
     $("adjTop").value = Math.round(p.top * 100);
     $("adjBottom").value = Math.round(p.bottom * 100);
     $("adjHeight").value = Math.round(p.aspect * 100);
@@ -107,9 +142,11 @@
       return;
     }
     var p = shapes.paramsFor(car());
+    var marginCm = sources.marginCmFor(car().country);
+    var vars = countryVars();
     var rows = chips.map(function (k, i) {
       var status = logic.currentStatus(k);
-      var edge = shapes.inMargin(p, k);
+      var edge = shapes.inMargin(p, k, marginCm);
       var fov = shapes.inFov(p, k, car().wheel);
       var rec = logic.recommend(k, { inMargin: edge, inFov: fov });
       var found = logic.foundDate(k);
@@ -117,10 +154,10 @@
       return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '">' +
         "<td>" + (i + 1) + "</td>" +
         '<td class="sym">' + ascii.markerChar(k) + "</td>" +
-        "<td>" + esc(t(SIZE_KEY[k.size] || k.size)) + "</td>" +
+        "<td>" + esc(sizeLabel(k.size)) + "</td>" +
         "<td>" + esc(t(STATUS_KEY[status])) + "</td>" +
         "<td>" + esc(found) + "</td>" +
-        '<td class="rec-dot rec-' + rec.level + '" title="' + esc(t(rec.key)) + '">' + badges + "</td></tr>";
+        '<td class="rec-dot rec-' + rec.level + '" title="' + esc(t(rec.key, vars)) + '">' + badges + "</td></tr>";
     }).join("");
     $("chipTable").innerHTML = "<table><tbody>" + rows + "</tbody></table>";
   }
@@ -138,12 +175,15 @@
 
   // ---------- marker popup ----------
 
-  // Cite the criteria behind an advice — only the ones we took from a shop.
+  // Cite the criteria behind an advice — only the ones we took from a shop,
+  // and always that country's own page: its numbers are the ones we judged by.
   function recSourceLink(rec) {
-    var url = rec.source && logic.SOURCES[rec.source];
-    if (!url) return "";
+    if (!rec.sourced) return "";
+    var code = sources.normalize(car().country);
+    var url = sources.criteriaFor(code).url;
+    var label = t("recSource", { country: sources.nameFor(code, i18n.get()) });
     return ' <a class="rec-src" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"' +
-      ' title="' + esc(t("recSource")) + '" aria-label="' + esc(t("recSource")) + '">ⓘ</a>';
+      ' title="' + esc(label) + '" aria-label="' + esc(label) + '">ⓘ</a>';
   }
 
   function buildPopup(chip) {
@@ -151,13 +191,13 @@
     var status = logic.currentStatus(chip);
     var p = shapes.paramsFor(car());
     var distCm = shapes.edgeDistanceCm(p, chip);
-    var edge = distCm < shapes.MARGIN_CM;
+    var edge = distCm < sources.marginCmFor(car().country);
     var fov = shapes.inFov(p, chip, car().wheel);
     var rec = logic.recommend(chip, { inMargin: edge, inFov: fov });
     var tl = logic.timeline(chip);
 
     var sizeOpts = logic.SIZES.map(function (s) {
-      return '<option value="' + s + '"' + (chip.size === s ? " selected" : "") + ">" + esc(t(SIZE_KEY[s])) + "</option>";
+      return '<option value="' + s + '"' + (chip.size === s ? " selected" : "") + ">" + esc(sizeLabel(s)) + "</option>";
     }).join("");
 
     var tlRows = tl.map(function (e) {
@@ -179,7 +219,7 @@
         "<strong>#" + idx + " · " + esc(t(STATUS_KEY[status])) + "</strong>" +
         '<button class="ghost pop-x" data-act="close" title="' + esc(t("close")) + '">×</button>' +
       "</div>" +
-      '<div class="rec rec-' + rec.level + '"><span class="rec-label">' + esc(t("recommendation")) + ":</span> " + esc(t(rec.key)) + recSourceLink(rec) + "</div>" +
+      '<div class="rec rec-' + rec.level + '"><span class="rec-label">' + esc(t("recommendation")) + ":</span> " + esc(t(rec.key, countryVars())) + recSourceLink(rec) + "</div>" +
       '<div class="popup-fields">' +
         '<label class="pf">' + esc(t("size")) + ' <select data-act="size">' + sizeOpts + "</select></label>" +
         // Both zone facts are derived from the position — shown, not editable.
@@ -309,7 +349,7 @@
     var btn = e.target.closest("button");
     if (!btn) return;
     if (btn.id === "addCar") {
-      var c = store.newCar("");
+      var c = store.newCar("", car().country);
       state.cars.push(c);
       state.activeCar = c.id;
     } else {
@@ -374,6 +414,9 @@
 
   $("wheelLeft").addEventListener("click", function () { car().wheel = "left"; touchCar(); persist(); closePopup(); rerenderAll(); });
   $("wheelRight").addEventListener("click", function () { car().wheel = "right"; touchCar(); persist(); closePopup(); rerenderAll(); });
+  // The country moves the edge margin, so the drawn zone and every verdict
+  // change with it — a full rerender, not just the form.
+  $("country").addEventListener("change", function () { car().country = this.value; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   $("glassSwap").addEventListener("click", function () {
     if (!confirm(t("confirmGlassSwap", { count: car().chips.length }))) return;

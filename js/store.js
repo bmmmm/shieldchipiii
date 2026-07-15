@@ -16,8 +16,26 @@
     };
   }
 
-  function newCar(name) {
-    return { id: logic.uid("c_"), name: name || "", shape: "sedan", adjust: null, wheel: "left", chips: [], up: now() };
+  // The country decides which repair criteria apply (sources.js), so a second
+  // car inherits it from the one in hand — nobody owns two cars in two
+  // countries often enough to retype it, and the guess is visible and editable.
+  function newCar(name, country) {
+    return {
+      id: logic.uid("c_"), name: name || "", shape: "sedan", adjust: null, wheel: "left",
+      country: country || guessCountry(), chips: [], up: now(),
+    };
+  }
+
+  // First run only: the browser's region is a better opening bid than pinning
+  // everyone to Germany, and it's one dropdown away from being corrected.
+  function guessCountry() {
+    var sources = window.SC.sources;
+    try {
+      var loc = new Intl.Locale(navigator.language);
+      var region = (loc.region || "").toLowerCase();
+      if (sources.has(region)) return region;
+    } catch (e) { /* no Intl.Locale, or a language tag without a region */ }
+    return sources.DEFAULT;
   }
 
   function defaultState() {
@@ -61,7 +79,7 @@
       var lc = local.cars.find(function (c) { return c.id === rc.id; });
       if (!lc) { local.cars.push(rc); return; }
       if ((rc.up || "") > (lc.up || "")) {
-        ["name", "shape", "adjust", "wheel", "up"].forEach(function (f) { lc[f] = rc[f]; });
+        ["name", "shape", "adjust", "wheel", "country", "up"].forEach(function (f) { lc[f] = rc[f]; });
       }
       rc.chips.forEach(function (rk) {
         var lk = lc.chips.find(function (k) { return k.id === rk.id; });
