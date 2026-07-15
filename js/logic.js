@@ -54,8 +54,9 @@
   // Repair recommendation from current status + geometry + size, following the
   // criteria glass shops use (Carglass): outside the driver's field of view,
   // smaller than a 2-euro coin, and more than 10 cm from the edge.
-  // `opts.inMargin` is the caller's edge check (shapes.inMargin) — geometry
-  // lives in shapes.js, so it's passed in rather than imported here.
+  // `opts.inMargin` / `opts.inFov` are the caller's geometry checks (shapes.js)
+  // — geometry lives there, so it's passed in rather than imported here. Both
+  // are derived from the chip's position, never user-set flags.
   // Returns { key, level } — key is an i18n key, level ∈ ok|warn|danger drives color.
   function recommend(chip, opts) {
     var status = currentStatus(chip);
@@ -65,7 +66,7 @@
 
     // new / observing: decide reparability from position + size.
     if (opts && opts.inMargin) return { key: "recReplaceEdge", level: "danger" };
-    if (chip.fov) return { key: "recReplaceFov", level: "danger" };
+    if (opts && opts.inFov) return { key: "recReplaceFov", level: "danger" };
     var size = chip.size;
     if (size === "crackL") return { key: "recReplaceBig", level: "danger" };
     if (size === "crackM" || size === "e2") return { key: "recBorderline", level: "warn" };
@@ -97,9 +98,11 @@
       events.push(makeEvent("repaired", chip.repairedAt || found, { where: chip.repairedBy || "" }));
     }
     if (chip.note) events.push(makeEvent("note", found, { note: chip.note }));
+    // No fov here: it used to be a stored flag, but it's derived from the
+    // position now (shapes.inFov), so a legacy value is simply dropped.
     return {
       id: chip.id, x: chip.x, y: chip.y,
-      size: chip.size || "c10", fov: !!chip.fov,
+      size: chip.size || "c10",
       events: events, up: chip.up || "",
     };
   }

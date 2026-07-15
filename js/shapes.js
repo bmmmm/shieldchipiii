@@ -275,8 +275,10 @@
   }
   function wheelX(wheel) { return wheel === "right" ? 0.75 : 0.25; }
 
-  // Suggest the FOV flag from a chip position (band check on the box x).
-  function suggestFov(params, chip, wheel) {
+  // Is the chip inside the driver's field of view? This follows from where it
+  // sits relative to the wheel, so it is derived, never a user-set flag — a
+  // chip far from the wheel can't be "in the view" no matter what a box says.
+  function inFov(params, chip, wheel) {
     var b = fovBand(params, wheel);
     var bx = chipToBox(params, chip).x;
     return bx >= b.from && bx <= b.to;
@@ -289,6 +291,6 @@
     outlineSamples: outlineSamples, edgeDistanceCm: edgeDistanceCm,
     inMargin: inMargin, marginInset: marginInset,
     chipToBox: chipToBox, boxToChip: boxToChip, outlinePath: outlinePath,
-    fovBand: fovBand, wheelX: wheelX, suggestFov: suggestFov, clamp: clamp,
+    fovBand: fovBand, wheelX: wheelX, inFov: inFov, clamp: clamp,
   };
 });

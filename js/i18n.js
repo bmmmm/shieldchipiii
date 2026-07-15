@@ -78,8 +78,10 @@
 
     // marker popup
     popupPosition: { de: "Position", en: "Position" },
-    fov: { de: "Im Sichtfeld Fahrer:in", en: "In driver's field of view" },
+    fov: { de: "Im Sichtfeld", en: "In field of view" },
     edgeDistance: { de: "Randabstand", en: "Edge distance" },
+    yes: { de: "ja", en: "yes" },
+    no: { de: "nein", en: "no" },
     timeline: { de: "Verlauf", en: "Timeline" },
     addEvent: { de: "+ Ereignis", en: "+ event" },
     eventType: { de: "Was", en: "What" },

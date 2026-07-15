@@ -82,17 +82,18 @@ function loadState(src) {
 
 // ---------- output ----------
 
-function chipLine(k, i, params) {
+function chipLine(k, i, params, wheel) {
   const status = logic.currentStatus(k);
   const found = (logic.timeline(k)[0] || {}).date || "";
   const edgeCm = params ? Math.round(shapes.edgeDistanceCm(params, k)) : null;
+  const fov = params ? shapes.inFov(params, k, wheel) : false;
   const cols = [
     String(i + 1).padStart(2),
     ascii.markerChar(k),
     (SIZE_LABEL[k.size] || k.size).padEnd(15),
     (STATUS_LABEL[status] || status).padEnd(15),
     found.padEnd(10),
-    k.fov ? "FOV" : "   ",
+    fov ? "FOV" : "   ",
     edgeCm != null ? (edgeCm + "cm").padStart(5) : "     ",
     logic.insuranceReported(k) ? "ins" : "   ",
   ];
@@ -118,8 +119,11 @@ function printCar(car, opts) {
   const params = shapes.paramsFor(car);
   console.log("   # sym size            status          found      fov  edge ins");
   car.chips.forEach((k, i) => {
-    console.log(chipLine(k, i, params));
-    const rec = logic.recommend(k, { inMargin: shapes.inMargin(params, k) });
+    console.log(chipLine(k, i, params, car.wheel));
+    const rec = logic.recommend(k, {
+      inMargin: shapes.inMargin(params, k),
+      inFov: shapes.inFov(params, k, car.wheel),
+    });
     console.log("     -> " + (REC_LABEL[rec.key] || rec.key));
   });
 }
@@ -174,7 +178,7 @@ Usage:
   shieldchipiii.js add   <src> --x <0..1> --y <0..1> [--car <name|nr>]
                    [--size ${SIZES.join("|")}]
                    [--status ${logic.STATUS_TYPES.join("|")}]
-                   [--fov] [--found YYYY-MM-DD] [--where "..."] [--note "..."]
+                   [--found YYYY-MM-DD] [--where "..."] [--note "..."]
                    [--out file.json] [--base <app-url>]
   shieldchipiii.js event <src> --marker <nr> --type <${ADDABLE.join("|")}>
                    [--car <name|nr>] [--date YYYY-MM-DD] [--where "..."] [--note "..."]
@@ -214,7 +218,7 @@ function main() {
         if (!c.chips.length) console.log("  (no entries)");
         const params = shapes.paramsFor(c);
         c.chips.forEach((k, i) => {
-          console.log(chipLine(k, i, params));
+          console.log(chipLine(k, i, params, c.wheel));
           timelineLines(k).forEach((l) => console.log(l));
         });
       });
@@ -241,7 +245,7 @@ function main() {
       } else if (typeof flags.note === "string") {
         events.push(logic.makeEvent("note", found, { note: flags.note }));
       }
-      car.chips.push({ id: logic.uid("k_"), x, y, size, fov: !!flags.fov, events, up: now });
+      car.chips.push({ id: logic.uid("k_"), x, y, size, events, up: now });
       printCar(car, { width: 58 });
       console.log("");
       emit(state, flags);

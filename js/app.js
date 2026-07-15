@@ -102,9 +102,10 @@
     var rows = chips.map(function (k, i) {
       var status = logic.currentStatus(k);
       var edge = shapes.inMargin(p, k);
-      var rec = logic.recommend(k, { inMargin: edge });
+      var fov = shapes.inFov(p, k, car().wheel);
+      var rec = logic.recommend(k, { inMargin: edge, inFov: fov });
       var found = (logic.timeline(k)[0] || {}).date || "";
-      var badges = (k.fov ? "⌖ " : "") + (edge ? "▣ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
+      var badges = (fov ? "⌖ " : "") + (edge ? "▣ " : "") + (logic.insuranceReported(k) ? "🛡" : "");
       return '<tr class="' + (k.id === selectedId ? "selected " : "") + "st-" + status + '" data-id="' + esc(k.id) + '">' +
         "<td>" + (i + 1) + "</td>" +
         '<td class="sym">' + ascii.markerChar(k) + "</td>" +
@@ -135,7 +136,8 @@
     var p = shapes.paramsFor(car());
     var distCm = shapes.edgeDistanceCm(p, chip);
     var edge = distCm < shapes.MARGIN_CM;
-    var rec = logic.recommend(chip, { inMargin: edge });
+    var fov = shapes.inFov(p, chip, car().wheel);
+    var rec = logic.recommend(chip, { inMargin: edge, inFov: fov });
     var tl = logic.timeline(chip);
 
     var sizeOpts = logic.SIZES.map(function (s) {
@@ -164,8 +166,9 @@
       '<div class="rec rec-' + rec.level + '"><span class="rec-label">' + esc(t("recommendation")) + ":</span> " + esc(t(rec.key)) + "</div>" +
       '<div class="popup-fields">' +
         '<label class="pf">' + esc(t("size")) + ' <select data-act="size">' + sizeOpts + "</select></label>" +
-        '<label class="pf pf-check"><input type="checkbox" data-act="fov"' + (chip.fov ? " checked" : "") + "> " + esc(t("fov")) + "</label>" +
-        '<span class="pf edge-dist' + (edge ? " is-edge" : "") + '">' + esc(t("edgeDistance")) + " ~" + Math.round(distCm) + " cm</span>" +
+        // Both zone facts are derived from the position — shown, not editable.
+        '<span class="pf zone-fact' + (fov ? " is-hit" : "") + '">' + esc(t("fov")) + ": " + esc(t(fov ? "yes" : "no")) + "</span>" +
+        '<span class="pf zone-fact' + (edge ? " is-hit" : "") + '">' + esc(t("edgeDistance")) + " ~" + Math.round(distCm) + " cm</span>" +
       "</div>" +
       '<div class="timeline"><div class="tl-head">' + esc(t("timeline")) + "</div><ul>" + tlRows + "</ul></div>" +
       '<form class="add-event" data-act="addEvent">' +
@@ -258,7 +261,6 @@
     var chip = chipById(selectedId);
     if (!chip) return;
     if (el.dataset.act === "size") { chip.size = el.value; chip.up = store.now(); persist(); refreshPopup(); renderWindshield(); renderChipTable(); }
-    else if (el.dataset.act === "fov") { chip.fov = el.checked; chip.up = store.now(); persist(); refreshPopup(); renderWindshield(); renderChipTable(); }
     else if (el.dataset.field === "type") { updateWhereVisibility(); }
   });
 
@@ -407,8 +409,7 @@
     if (!render.onGlass(car(), box)) { closePopup(); return; }
     var p = shapes.paramsFor(car());
     var pos = shapes.boxToChip(p, box.x, box.y);
-    var chip = store.newChip(pos);
-    chip.fov = shapes.suggestFov(p, chip, car().wheel);
+    var chip = store.newChip(pos); // fov/edge are derived from the position, not stored
     car().chips.push(chip);
     persist();
     openPopup(chip.id);

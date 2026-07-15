@@ -135,7 +135,8 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .lg.m-replaced { color: var(--st-replaced); }
 .lg.fov { color: var(--danger); }
 .lg.edge { color: var(--danger); }
-.edge-dist.is-edge { color: var(--danger); }
+/* derived zone facts — read-only, red when the chip is in a no-go zone */
+.zone-fact.is-hit { color: var(--danger); }
 
 /* floating marker popup */
 #glassStage { position: relative; }

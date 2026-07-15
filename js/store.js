@@ -10,7 +10,7 @@
     var today = new Date().toISOString().slice(0, 10);
     return {
       id: logic.uid("k_"), x: pos.x, y: pos.y,
-      size: "c10", fov: false,
+      size: "c10",
       events: [logic.makeEvent("new", today)],
       up: now(),
     };
@@ -76,7 +76,7 @@
         var lk = lc.chips.find(function (k) { return k.id === rk.id; });
         if (!lk) { lc.chips.push(rk); return; }
         if ((rk.up || "") > (lk.up || "")) {
-          ["x", "y", "size", "fov", "up"].forEach(function (f) { lk[f] = rk[f]; });
+          ["x", "y", "size", "up"].forEach(function (f) { lk[f] = rk[f]; });
         }
         var seen = {};
         (lk.events || []).forEach(function (e) { seen[e.id] = true; });
