@@ -96,9 +96,10 @@ Punkte stimmen:
   quer) über dem Lenkrad.
 - Er ist **mehr als 10 cm vom Scheibenrand** entfernt.
 
-Trifft einer nicht zu, muss die Scheibe meist getauscht werden. Die Teilkasko
-übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — die
-Werkstatt entscheidet.
+Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur,
+den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko
+übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr —
+entschieden wird in der Werkstatt.
 
 ## Support
 

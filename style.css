@@ -91,8 +91,10 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .glass-wrap { text-align: center; }
 #windshield { width: 100%; height: auto; touch-action: none; cursor: crosshair; }
 .glass { fill: var(--glass); stroke: var(--fg); stroke-width: 3; }
-.fov-band { fill: var(--accent); opacity: 0.07; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 7 7; }
-.margin-band { fill: var(--danger); opacity: 0.12; stroke: none; }
+/* Both no-repair zones read as one category — same colour, like the shop's
+   own diagram. The dashed outline tells the field of view from the rim. */
+.fov-band { fill: var(--danger); opacity: 0.13; stroke: var(--danger); stroke-width: 2; stroke-dasharray: 8 6; stroke-opacity: 0.75; }
+.margin-band { fill: var(--danger); opacity: 0.13; stroke: none; }
 .mirror { fill: var(--panel); stroke: var(--fg); stroke-width: 2.5; }
 .mirror-stalk { stroke: var(--fg); stroke-width: 2.5; }
 .dash { fill: none; stroke: var(--muted); stroke-width: 3; }
@@ -122,6 +124,8 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
 
 .legend { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.legend-zones { display: block; margin-top: 3px; }
+.legend-zones strong { color: var(--danger); font-weight: normal; }
 .lg { font-size: 15px; vertical-align: -1px; }
 .lg.m-new { color: var(--st-new); }
 .lg.m-observing { color: var(--st-observing); }
@@ -129,7 +133,7 @@ details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; 
 .lg.m-repaired { color: var(--st-repaired); }
 .lg.m-irreparable { color: var(--st-irreparable); }
 .lg.m-replaced { color: var(--st-replaced); }
-.lg.fov { color: var(--accent); }
+.lg.fov { color: var(--danger); }
 .lg.edge { color: var(--danger); }
 .edge-dist.is-edge { color: var(--danger); }
 

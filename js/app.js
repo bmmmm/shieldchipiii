@@ -47,16 +47,21 @@
   }
 
   function renderLegend() {
-    var items = [
+    var statuses = [
       ['<span class="lg m-new">●</span>', "statusNew"],
       ['<span class="lg m-observing">●</span>', "statusObserving"],
       ['<span class="lg m-planned">●</span>', "statusRepairPlanned"],
       ['<span class="lg m-repaired">●</span>', "statusRepaired"],
       ['<span class="lg m-irreparable">●</span>', "statusIrreparable"],
-      ['<span class="lg fov">▒</span>', "legendFov"],
-      ['<span class="lg edge">▒</span>', "legendMargin"],
     ];
-    $("legend").innerHTML = items.map(function (it) { return it[0] + " " + esc(t(it[1])); }).join(" · ");
+    // The two red zones mean the same thing, so they get one grouped line.
+    var zones = [
+      ['<span class="lg edge">▒</span>', "legendMargin"],
+      ['<span class="lg fov">▒</span>', "legendFov"],
+    ];
+    var fmt = function (it) { return it[0] + " " + esc(t(it[1])); };
+    $("legend").innerHTML = statuses.map(fmt).join(" · ") +
+      '<span class="legend-zones"><strong>' + esc(t("legendNoRepair")) + "</strong> " + zones.map(fmt).join(" · ") + "</span>";
   }
 
   function renderCarTabs() {

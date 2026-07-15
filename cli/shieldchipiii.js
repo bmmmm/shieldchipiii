@@ -28,9 +28,9 @@ const EVENT_LABEL = {
 const REC_LABEL = {
   recRepairable: "repairable — insurance often covers it, do it soon",
   recBorderline: "borderline — have a shop check repair vs. replace",
-  recReplaceFov: "in the driver's view — likely needs a glass replacement",
-  recReplaceEdge: "< 10 cm from the edge — a repair won't hold, replace the pane",
-  recReplaceBig: "too large (> 5 cm) — likely needs a glass replacement",
+  recReplaceFov: "no-go zone (driver's view) — repair unlikely, ask a glass service",
+  recReplaceEdge: "no-go zone (< 10 cm from the edge) — repair unlikely, ask a glass service",
+  recReplaceBig: "crack over 5 cm — repair unlikely, ask a glass service",
   recPlanned: "repair planned — keep the appointment, avoid temp shocks",
   recWatchRepair: "repaired — watch that it holds",
   recIrreparable: "irreparable — arrange a glass replacement",
@@ -186,8 +186,8 @@ Usage:
 x/y are fractions: x = 0 (left edge) .. 1 (right edge at the chip's height),
 y = 0 (top) .. 1 (bottom). Example: --x 0.3 --y 0.6
 Marker symbols: o=open ?=observing @=planned *=repaired X=irreparable
-The edge column is the distance to the nearest edge; under 10 cm the pane
-usually has to be replaced instead of repaired.`;
+The edge column is the distance to the nearest edge; under 10 cm a repair is
+unlikely — a glass service has to decide.`;
 
 // ---------- main ----------
 
