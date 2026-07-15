@@ -417,14 +417,26 @@
     renderWindshield();
   });
 
-  svg.addEventListener("pointerup", function (e) {
-    if (!drag) return;
-    var id = drag.id, moved = drag.moved;
+  function endDrag(id, moved) {
     drag = null;
-    suppressClick = true;
     var k = chipById(id);
     if (moved && k) { k.up = store.now(); persist(); }
     openPopup(id); // select + (re)position popup at the marker
+  }
+
+  svg.addEventListener("pointerup", function () {
+    if (!drag) return;
+    suppressClick = true; // swallow the click trailing this pointerup
+    endDrag(drag.id, drag.moved);
+  });
+
+  // A cancelled pointer — a system gesture, a context menu — never sends
+  // pointerup. Without this the drag stays live and the next move drags the
+  // marker around with no button held. No click follows a cancel, so nothing
+  // to swallow.
+  svg.addEventListener("pointercancel", function () {
+    if (!drag) return;
+    endDrag(drag.id, drag.moved);
   });
 
   svg.addEventListener("click", function (e) {
@@ -492,10 +504,13 @@
   $("exportJson").addEventListener("click", function () {
     var blob = new Blob([JSON.stringify({ v: 1, cars: state.cars }, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    var url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = "shieldchipiii-" + today() + ".json";
     a.click();
-    URL.revokeObjectURL(a.href);
+    // Revoked on the next tick: the download reads the blob after click()
+    // returns, and pulling the URL out from under it races that read.
+    setTimeout(function () { URL.revokeObjectURL(url); }, 0);
   });
   $("importJson").addEventListener("change", function () {
     var file = this.files[0];
