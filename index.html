@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Everything is local by design; the policy makes that enforceable — a
+       smuggled script or off-origin fetch is dead weight, not a phone-home. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'">
   <title>shieldchipiii — windshield stone chip logbook</title>
   <meta name="description" content="Document stone chips on your car windshield: position, size, repair status, insurance. No server, all local. / Steinschläge auf der Windschutzscheibe dokumentieren — lokal im Browser.">
   <link rel="stylesheet" href="style.css?v=6f9bd0e">
