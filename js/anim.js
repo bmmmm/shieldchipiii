@@ -208,9 +208,10 @@
 
   // Small 7×3 stage centered on the marker: crack collapses, a mini ribbon
   // flicks across with the same white glow as the splash sweeps, and the
-  // sequence settles on '@' — the exact glyph the app draws for
-  // "repair planned", so the animation dissolves into the marker itself.
-  function buildRepairFrames() {
+  // sequence settles on the exact glyph the app draws for the new status —
+  // '@' (repair planned, yellow) or '*' (repaired, green) — so the animation
+  // dissolves into the marker itself.
+  function buildRepairFrames(kind) {
     var RW = 7, RH = 3, CX = 3, CY = 1;
     var frames = [], g, i;
     var crackPts = [
@@ -245,10 +246,13 @@
       frames.push({ grid: g, ms: 70 });
     }
 
-    // hand off to the marker glyph: bright pulse settling to yellow
-    g = smallGrid(RW, RH); set(g, CY, CX, "@", "glow"); frames.push({ grid: g, ms: 120 });
-    g = smallGrid(RW, RH); set(g, CY, CX, "@", "yglow"); frames.push({ grid: g, ms: 130 });
-    g = smallGrid(RW, RH); set(g, CY, CX, "@", "y"); frames.push({ grid: g, ms: 300 });
+    // hand off to the marker glyph: bright pulse settling to the status color
+    var end = kind === "repaired"
+      ? { ch: "*", mid: "gglow", last: "g" }
+      : { ch: "@", mid: "yglow", last: "y" };
+    g = smallGrid(RW, RH); set(g, CY, CX, end.ch, "glow"); frames.push({ grid: g, ms: 120 });
+    g = smallGrid(RW, RH); set(g, CY, CX, end.ch, end.mid); frames.push({ grid: g, ms: 130 });
+    g = smallGrid(RW, RH); set(g, CY, CX, end.ch, end.last); frames.push({ grid: g, ms: 300 });
 
     return frames;
   }
@@ -331,8 +335,9 @@
   // ---------- public: repair micro-effect at a marker ----------
 
   // stage: the positioned ancestor (#glassStage), x/y: marker center in stage
-  // pixels — the same coordinates the popup positions itself with.
-  function repairFx(stage, x, y) {
+  // pixels — the same coordinates the popup positions itself with. kind is
+  // the event type ("repair_planned" or "repaired") and picks the handoff glyph.
+  function repairFx(stage, x, y, kind) {
     if (reducedMotion()) return;
     var pre = document.createElement("pre");
     pre.className = "repair-fx anim-stage";
@@ -340,7 +345,7 @@
     pre.style.left = x + "px";
     pre.style.top = y + "px";
     stage.appendChild(pre);
-    playFrames(pre, buildRepairFrames(), function () { return !pre.isConnected; }, function () { pre.remove(); });
+    playFrames(pre, buildRepairFrames(kind), function () { return !pre.isConnected; }, function () { pre.remove(); });
   }
 
   window.SC = window.SC || {};

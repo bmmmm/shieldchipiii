@@ -397,11 +397,12 @@
     refreshPopup();
     renderWindshield();
     renderChipTable();
-    // Marking a repair gets its little moment: the brand micro-animation plays
-    // over the marker and hands off to the '@' the rerender just drew.
-    if (type === "repair_planned") {
+    // A repair event gets its little moment: the brand micro-animation plays
+    // over the marker and hands off to the glyph the rerender just drew —
+    // '@' for a planned repair, '*' for a done one.
+    if (type === "repair_planned" || type === "repaired") {
       var pos = render.markerElementPos(svg, car(), chip);
-      window.SC.anim.repairFx($("glassStage"), pos.x, pos.y);
+      window.SC.anim.repairFx($("glassStage"), pos.x, pos.y, type);
     }
   });
 

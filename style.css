@@ -408,6 +408,8 @@ html { scroll-behavior: smooth; }
 .anim-stage .dim  { color: #98a2ad; }
 .anim-stage .glow { color: #fff; text-shadow: 0 0 12px #fff, 0 0 20px rgba(255, 255, 255, .65); }
 .anim-stage .yglow { color: #ffd500; text-shadow: 0 0 10px rgba(255, 213, 0, .9), 0 0 20px rgba(255, 213, 0, .5); }
+.anim-stage .g     { color: #3fb950; text-shadow: 0 0 6px rgba(63, 185, 80, .35); }
+.anim-stage .gglow { color: #3fb950; text-shadow: 0 0 10px rgba(63, 185, 80, .9), 0 0 20px rgba(63, 185, 80, .5); }
 @media (prefers-color-scheme: light) {
   /* the marker effect plays over the light glass — white glow and pale yellow
      would vanish there (the splash keeps its own dark stage and needs none) */
@@ -415,4 +417,5 @@ html { scroll-behavior: smooth; }
   .repair-fx .fg   { color: #1f2328; }
   .repair-fx .dim  { color: #656d76; }
   .repair-fx .y, .repair-fx .yglow { color: #9a6700; text-shadow: none; }
+  .repair-fx .g, .repair-fx .gglow { color: #1a7f37; text-shadow: none; }
 }

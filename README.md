@@ -6,6 +6,13 @@
 
 **→ [Live demo](https://bmmmm.github.io/shieldchipiii/)** · no framework · no build · no npm
 
+Want it pre-filled? **[Open the demo data set](https://bmmmm.github.io/shieldchipiii/#i:H4sIAAAAAAAAE62TUY7TMBCGrxLNE0juKnYS28krSDwgXlZ9AqHKscdN2NSJnLSlVJU4BEfgDHuB3oSToFSbJrDVVlS8xWP_mv_7Z7KHDWSUgFa-hezTHkoDGegF52kYMaGAgFMrhAze1ZUNRPDqLa7q10CgLVTT13W9apTugIAyX9ZtB5lbVxWBbYFYQQYV2v5S12vX-R1kYLA_FmUzafiwQImGCymAwFfIwjvOCOz6j5gRaMtvfStkQAA36LqJFBeUWbQq10Cg2508OdwCAaO6_sBCxmehmNEYDp8JLGuHkO0PBNbN9JbPQ5nFaRamd3Eaf4QDOXujkjKZGDp4iwdvXJ69aRpeNIdW5ppa86I5PqN8bIgLgwJRJBNRnbfoN6VbPucK-1Rcfaptjz910XaBK3XRBb--_whyrHOliw7drfTMSmbDXA30YoC_OhhG00hESl0bDJ2yWxsZmRs2ijw2qvSLplLOobmgl2MAc_Sr0gU0zqJ-HtsCfV9-o_yyUm0bvD8-VjcnkaocaYLnJOSwB9G1JGysuWYqfTGJZEbFNAlM0MgwUX8n8TwDPgvpf6eVNJcWpR1ow-SJViTj1nulHz5cRDY0MhZlcm34yR-LLwXjMhGjqPQ9tFd5hRfEfJz8fdm2QbkK7pUzOXosdXH6AeZq3eoicMfHrlz-WxY3vj38BnefjARVBQAA)** —
+one vehicle, five entries across every status (new, observing, repair
+planned, repaired, irreparable), imported through the app's own share-link
+mechanism: nothing is written until you confirm the dialog. Add
+`?splash=impact` (or `shatter`, `wiper`, `radar`) to any app URL to pin one
+of the four splash scenes — handy for showing it around.
+
 Document every stone chip on your car's windshield: position on the glass,
 size, repair status, insurance reporting. Data lives in `localStorage`;
 sharing between devices works via QR code, URL token, JSON export — or the
@@ -78,6 +85,14 @@ terminal.
   parking deck). Install it to the home screen for an app icon and a
   standalone window. Updates arrive one start later — the shell is served
   cache-first; the data itself never needed the network to begin with.
+- **A splash of brand** — page loads rotate through four ASCII splash scenes
+  (a chip cracks the glass and a squeegee wipes it clean · the shatter runs
+  backward into the wordmark · a wiper clears the rain off the brand · a
+  radar scan finds the chip and identifies the maker), each landing on the
+  CARGLASS ribbon, the slogan and a fan-demo note. Any click or key skips it,
+  `?splash=<id>` pins a scene, reduced motion gets a still logo — and marking
+  a repair as planned plays a micro-flourish that dissolves into the marker's
+  own `@`.
 - **Workshop report** — one tap opens a printable sheet for the shop: the
   drawing, the pane's real measurements, the country criteria the verdicts
   came from (source cited), a damage table with edge distances, and each
@@ -169,6 +184,14 @@ Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur,
 den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko
 übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr —
 entschieden wird in der Werkstatt.
+
+## Trademark & affiliation
+
+This is an unofficial fan demo. CARGLASS® is a registered trademark of
+Belron International Ltd.; this project is not affiliated with, endorsed by
+or connected to Carglass or Belron. The brand appears as an ASCII-art homage
+in the splash animation — the splash itself and the app footer say so out
+loud — and the repair criteria cite the shops' own public pages as sources.
 
 ## Support
 
