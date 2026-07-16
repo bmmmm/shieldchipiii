@@ -131,6 +131,7 @@
     $("adjWidthCmOut").textContent = Math.round(p.widthCm) + " cm";
     $("adjHeightCm").value = Math.round(p.heightCm);
     $("adjHeightCmOut").textContent = Math.round(p.heightCm) + " cm";
+    $("adjRake").value = Math.round(p.rake * 100);
     $("adjWheelCm").value = Math.round(p.wheelCm);
     $("adjWheelCmOut").textContent = Math.round(p.wheelCm) + " cm";
     $("wheelLeft").classList.toggle("active", c.wheel !== "right");
@@ -442,7 +443,7 @@
       top: $("adjTop").value / 100, bottom: $("adjBottom").value / 100,
       round: $("adjRound").value / 100, bow: $("adjBow").value / 100,
       widthCm: +$("adjWidthCm").value, heightCm: +$("adjHeightCm").value,
-      wheelCm: +$("adjWheelCm").value,
+      rake: $("adjRake").value / 100, wheelCm: +$("adjWheelCm").value,
     };
     touchCar();
     persist();
@@ -453,7 +454,7 @@
     renderWindshield();
     renderChipTable(); // both edge margin and field of view are measured on the real pane
   }
-  ["adjTop", "adjBottom", "adjRound", "adjBow", "adjWidthCm", "adjHeightCm", "adjWheelCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  ["adjTop", "adjBottom", "adjRound", "adjBow", "adjWidthCm", "adjHeightCm", "adjRake", "adjWheelCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   // Opens a prefilled GitHub issue form with the current shape values, so
@@ -470,8 +471,6 @@
       top: p.top.toFixed(2), bottom: p.bottom.toFixed(2),
       round: p.round.toFixed(2), bow: p.bow.toFixed(2),
       width_cm: String(Math.round(p.widthCm)), height_cm: String(Math.round(p.heightCm)),
-      // Carried from the preset the proposer started from — no slider sets it,
-      // but a preset without it can't turn a real pane into a drawing.
       rake: p.rake.toFixed(2),
       wheel_cm: String(Math.round(p.wheelCm)),
     };

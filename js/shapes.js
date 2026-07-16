@@ -88,9 +88,9 @@
     }
     var widthCm = pick("widthCm", 142);
     var heightCm = pick("heightCm", 85);
-    // Rake belongs to the model's screen angle, not to this car — it comes from
-    // the preset only, so the two cm sliders are the whole story of the pane.
-    var rake = clamp(num(base.rake, 0.60), LIMITS.rake.min, LIMITS.rake.max);
+    // Adjustable like the cm pair: the preset seeds the screen's lean, and the
+    // slider is for panes whose lean no preset matches (issue #3, D1).
+    var rake = pick("rake", 0.60);
     return {
       top: pick("top", 1),
       bottom: pick("bottom", 1),

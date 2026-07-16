@@ -24,6 +24,7 @@
     adjBow: { de: "Wölbung", en: "Edge bow" },
     adjWidthCm: { de: "Breite real", en: "Real width" },
     adjHeightCm: { de: "Höhe real", en: "Real height" },
+    adjRake: { de: "Neigung", en: "Rake" },
     adjWheelCm: { de: "Lenkrad ⌀", en: "Wheel ⌀" },
     adjReset: { de: "zurücksetzen", en: "reset" },
     proposeShape: { de: "Als Auto-Modell vorschlagen ↗", en: "Propose as car model ↗" },

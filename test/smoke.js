@@ -210,9 +210,14 @@ const hasCtrl = (s) => Array.from(String(s))
   // a daft combination still can't draw a pane taller than it is wide
   assert.strictEqual(sh.paramsFor({ shape: "sedan", adjust: { heightCm: 130, widthCm: 100 } }).aspect, 0.65);
   assert.strictEqual(sh.paramsFor({ shape: "sedan", adjust: { heightCm: 50, widthCm: 200 } }).aspect, 0.20);
-  // rake is the preset's, not the car's — no slider sets it
-  assert.strictEqual(sh.paramsFor({ shape: "sport", adjust: { rake: 0.99 } }).rake,
-    sh.PRESETS.sport.rake, "rake comes from the preset, not from adjust");
+  // rake is adjustable (issue #3, D1: option B) — seeded by the preset,
+  // overridden per car for panes whose lean no preset matches
+  assert.strictEqual(sh.paramsFor({ shape: "sport", adjust: { rake: 0.9 } }).rake, 0.9,
+    "an adjusted rake wins over the preset's");
+  assert.strictEqual(sh.paramsFor({ shape: "sport" }).rake, sh.PRESETS.sport.rake,
+    "without an adjustment the preset seeds the rake");
+  assert.strictEqual(sh.paramsFor({ shape: "sport", adjust: { rake: 9 } }).rake, 1.0,
+    "a daft rake is clamped, not drawn");
 
   // --- old saved data and every share link out there carry adjust.aspect ---
   // The migration has to preserve what the user drew — that is the only thing
