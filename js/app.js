@@ -125,11 +125,12 @@
     renderShapeButtons();
     $("adjTop").value = Math.round(p.top * 100);
     $("adjBottom").value = Math.round(p.bottom * 100);
-    $("adjHeight").value = Math.round(p.aspect * 100);
     $("adjRound").value = Math.round(p.round * 100);
     $("adjBow").value = Math.round(p.bow * 100);
     $("adjWidthCm").value = Math.round(p.widthCm);
     $("adjWidthCmOut").textContent = Math.round(p.widthCm) + " cm";
+    $("adjHeightCm").value = Math.round(p.heightCm);
+    $("adjHeightCmOut").textContent = Math.round(p.heightCm) + " cm";
     $("adjWheelCm").value = Math.round(p.wheelCm);
     $("adjWheelCmOut").textContent = Math.round(p.wheelCm) + " cm";
     $("wheelLeft").classList.toggle("active", c.wheel !== "right");
@@ -439,18 +440,20 @@
   function onAdjust() {
     car().adjust = {
       top: $("adjTop").value / 100, bottom: $("adjBottom").value / 100,
-      aspect: $("adjHeight").value / 100, round: $("adjRound").value / 100, bow: $("adjBow").value / 100,
-      widthCm: +$("adjWidthCm").value, wheelCm: +$("adjWheelCm").value,
+      round: $("adjRound").value / 100, bow: $("adjBow").value / 100,
+      widthCm: +$("adjWidthCm").value, heightCm: +$("adjHeightCm").value,
+      wheelCm: +$("adjWheelCm").value,
     };
     touchCar();
     persist();
     $("adjWidthCmOut").textContent = $("adjWidthCm").value + " cm";
+    $("adjHeightCmOut").textContent = $("adjHeightCm").value + " cm";
     $("adjWheelCmOut").textContent = $("adjWheelCm").value + " cm";
     renderShapeButtons(); // the shape is no longer a plain preset
     renderWindshield();
-    renderChipTable(); // the edge margin scales with the real width
+    renderChipTable(); // both edge margin and field of view are measured on the real pane
   }
-  ["adjTop", "adjBottom", "adjHeight", "adjRound", "adjBow", "adjWidthCm", "adjWheelCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
+  ["adjTop", "adjBottom", "adjRound", "adjBow", "adjWidthCm", "adjHeightCm", "adjWheelCm"].forEach(function (id) { $(id).addEventListener("input", function () { closePopup(); onAdjust(); }); });
   $("adjReset").addEventListener("click", function () { car().adjust = null; touchCar(); persist(); closePopup(); rerenderAll(); });
 
   // Opens a prefilled GitHub issue form with the current shape values, so
@@ -465,8 +468,12 @@
       title: "[model] " + (c.name || ""),
       car: c.name || "",
       top: p.top.toFixed(2), bottom: p.bottom.toFixed(2),
-      aspect: p.aspect.toFixed(2), round: p.round.toFixed(2), bow: p.bow.toFixed(2),
-      width_cm: String(Math.round(p.widthCm)), wheel_cm: String(Math.round(p.wheelCm)),
+      round: p.round.toFixed(2), bow: p.bow.toFixed(2),
+      width_cm: String(Math.round(p.widthCm)), height_cm: String(Math.round(p.heightCm)),
+      // Carried from the preset the proposer started from — no slider sets it,
+      // but a preset without it can't turn a real pane into a drawing.
+      rake: p.rake.toFixed(2),
+      wheel_cm: String(Math.round(p.wheelCm)),
     };
     var query = Object.keys(fields).map(function (k) {
       return k + "=" + encodeURIComponent(fields[k]);

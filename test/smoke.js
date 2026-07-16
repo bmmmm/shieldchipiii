@@ -184,10 +184,73 @@ const hasCtrl = (s) => Array.from(String(s))
   assert.ok(Math.abs((eDefault.right - eDefault.left) - (eF.right - eF.left)) < 1e-9, "unset bottom == 1.0");
 
   // --- adjust values off a share link can't poison the geometry ---
-  const poisoned = sh.paramsFor({ shape: "sedan", adjust: { top: "wide", aspect: null, widthCm: {}, bow: NaN } });
+  const poisoned = sh.paramsFor({ shape: "sedan", adjust: { top: "wide", heightCm: null, widthCm: {}, bow: NaN } });
   Object.keys(poisoned).forEach((k) => {
     assert.ok(isFinite(poisoned[k]), k + " stays a real number despite junk in adjust");
   });
+
+  // --- the real pane is the input, the drawing the output ---
+  // aspect is derived, so nothing can store a drawn height that the pane the
+  // verdicts measure against doesn't back up.
+  assert.ok(!("aspect" in sh.PRESETS.sedan), "aspect is not a stored preset value any more");
+  sh.PRESET_ORDER.forEach((key) => {
+    const q = sh.paramsFor({ shape: key });
+    assert.ok(Math.abs(q.aspect - (q.heightCm / q.widthCm) * q.rake) < 1e-9,
+      key + ": aspect follows from the real pane and the rake");
+  });
+  // a taller real pane draws taller; a wider one draws relatively shorter
+  assert.ok(sh.paramsFor({ shape: "sedan", adjust: { heightCm: 100 } }).aspect >
+            sh.paramsFor({ shape: "sedan", adjust: { heightCm: 70 } }).aspect,
+    "real height moves the drawn height");
+  // real height no longer rides along with width — that was the bug: the one
+  // number the verdict turns on could only be set by proxy.
+  assert.strictEqual(sh.paramsFor({ shape: "sedan", adjust: { widthCm: 190 } }).heightCm,
+    sh.paramsFor({ shape: "sedan" }).heightCm,
+    "widening the pane does not silently invent a new real height");
+  // a daft combination still can't draw a pane taller than it is wide
+  assert.strictEqual(sh.paramsFor({ shape: "sedan", adjust: { heightCm: 130, widthCm: 100 } }).aspect, 0.65);
+  assert.strictEqual(sh.paramsFor({ shape: "sedan", adjust: { heightCm: 50, widthCm: 200 } }).aspect, 0.20);
+  // rake is the preset's, not the car's — no slider sets it
+  assert.strictEqual(sh.paramsFor({ shape: "sport", adjust: { rake: 0.99 } }).rake,
+    sh.PRESETS.sport.rake, "rake comes from the preset, not from adjust");
+
+  // --- old saved data and every share link out there carry adjust.aspect ---
+  // The migration has to preserve what the user drew — that is the only thing
+  // they actually chose; the real height it implies is what they meant by it.
+  // 0.28-0.47 is the band every preset can represent as a real pane at 150 cm
+  // wide (the flat sport rake is the binding one).
+  sh.PRESET_ORDER.forEach((key) => {
+    [0.30, 0.40, 0.45].forEach((aspect) => {
+      const legacy = { id: "c" + key, shape: key, adjust: { top: 0.95, bottom: 0.9, aspect, widthCm: 150 }, chips: [] };
+      const migrated = SC.logic.normalizeCars([legacy])[0];
+      assert.ok(!("aspect" in migrated.adjust), key + ": aspect is gone from the stored adjust");
+      assert.ok(Math.abs(sh.paramsFor(migrated).aspect - aspect) < 1e-9,
+        key + ": a pane drawn at aspect " + aspect + " still draws at aspect " + aspect);
+      assert.ok(migrated.adjust.heightCm > 0, key + ": the drawn height became a real height");
+    });
+  });
+  // An unknown shape migrates against the same preset it renders as — resolving
+  // those two differently would convert against a rake the drawing never used.
+  const strange = SC.logic.normalizeCars([{ id: "s", shape: "hovercraft", adjust: { aspect: 0.4, widthCm: 150 }, chips: [] }])[0];
+  assert.ok(Math.abs(sh.paramsFor(strange).aspect - 0.4) < 1e-9, "an unknown shape migrates as the sedan it draws as");
+
+  // Outside that band the old state was incoherent to begin with: a sports
+  // screen drawn at aspect 0.5 on a 150 cm pane claims a 139 cm windshield,
+  // while the cm space it was judged in said 78. The drawing can't win that
+  // argument any more — the real pane is clamped to something real, and the
+  // drawing follows it. This is the one case where a migration moves a pane.
+  const absurd = SC.logic.normalizeCars([{ id: "a", shape: "sport", adjust: { aspect: 0.5, widthCm: 150 }, chips: [] }])[0];
+  assert.strictEqual(sh.paramsFor(absurd).heightCm, 130, "an impossible real height is pulled to the tallest real pane");
+  assert.ok(sh.paramsFor(absurd).aspect < 0.5, "and the drawing follows the pane, not the other way round");
+  // the preset's own drawing doesn't move either: an aspect that was never
+  // adjusted has nothing to migrate, and the seeded rake reproduces it
+  assert.ok(Math.abs(sh.paramsFor({ shape: "sedan" }).aspect - 0.36) < 0.005, "sedan still draws as it did");
+  assert.ok(Math.abs(sh.paramsFor({ shape: "van" }).aspect - 0.55) < 0.005, "van still draws as it did");
+  assert.ok(Math.abs(sh.paramsFor({ shape: "sport" }).aspect - 0.28) < 0.005, "sport still draws as it did");
+  // junk where the aspect was is not a height — it falls back to the preset
+  const junkAspect = SC.logic.normalizeCars([{ id: "j", shape: "sedan", adjust: { aspect: null }, chips: [] }])[0];
+  assert.ok(!("heightCm" in junkAspect.adjust), "a junk aspect does not become a made-up real height");
+  assert.strictEqual(sh.paramsFor(junkAspect).heightCm, sh.PRESETS.sedan.heightCm);
 
   // --- presets read as seen from the driver's seat, not from outside ---
   // The top edge is the NEAR one (roof line, nearly overhead), the bottom edge
@@ -758,12 +821,13 @@ const hasCtrl = (s) => Array.from(String(s))
   const formSrc = fs.readFileSync(path.join(root, ".github/ISSUE_TEMPLATE/car-model.yml"), "utf8");
   const formIds = Array.from(formSrc.matchAll(/^\s{4}id:\s*(\S+)/gm)).map((m) => m[1]);
   const snake = (k) => k.replace(/([A-Z])/g, (c) => "_" + c.toLowerCase());
-  Object.keys(SC.shapes.PRESETS.sedan)
-    .filter((k) => k !== "heightCm") // derived from widthCm — not the proposer's to set
-    .forEach((k) => {
-      assert.ok(formIds.includes(snake(k)),
-        "the car-model form asks for '" + snake(k) + "' — a preset can't be built without it");
-    });
+  Object.keys(SC.shapes.PRESETS.sedan).forEach((k) => {
+    assert.ok(formIds.includes(snake(k)),
+      "the car-model form asks for '" + snake(k) + "' — a preset can't be built without it");
+  });
+  // aspect is derived now, so asking for it would invite a value that the real
+  // pane contradicts — and the form is where community presets come from.
+  assert.ok(!formIds.includes("aspect"), "the form does not ask for a derived value");
 
   // --- sanitize rejects garbage ---
   assert.strictEqual(SC.store.sanitize({ foo: 1 }), null);
