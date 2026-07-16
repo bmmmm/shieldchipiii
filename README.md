@@ -89,10 +89,11 @@ terminal.
   (a chip cracks the glass and a squeegee wipes it clean · the shatter runs
   backward into the wordmark · a wiper clears the rain off the brand · a
   radar scan finds the chip and identifies the maker), each landing on the
-  CARGLASS ribbon, the slogan and a fan-demo note. Any click or key skips it,
-  `?splash=<id>` pins a scene, reduced motion gets a still logo — and marking
-  a repair as planned plays a micro-flourish that dissolves into the marker's
-  own `@`.
+  CARGLASS ribbon, the slogan and a fan-demo note. The full scene plays once
+  a day; later loads get a one-second landing instead. Any click or key skips
+  it, `?splash=<id>` pins a scene (and always plays it in full), reduced
+  motion gets a still logo — and recording a repair as planned or done plays
+  a micro-flourish that dissolves into the marker's own `@` or `*`.
 - **Workshop report** — one tap opens a printable sheet for the shop: the
   drawing, the pane's real measurements, the country criteria the verdicts
   came from (source cited), a damage table with edge distances, and each

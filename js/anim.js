@@ -1,14 +1,16 @@
 /* shieldchipiii — brand animation engine: grid primitives, the shared logo
  * geometry, a scene registry and the overlay player. The splash scenes
- * themselves live in js/anim-*.js and register here; page loads rotate
- * through them. ASCII frames stepped like a terminal, not tweened.
+ * themselves live in js/anim-*.js and register here; the first load of the
+ * day plays the next full scene in rotation, every later load gets a short
+ * landing-only greeting. ASCII frames stepped like a terminal, not tweened.
  * Browser-only garnish the CLI never loads: skippable (any click or key),
  * aria-hidden, and gone entirely under reduced motion. */
 (function () {
   "use strict";
 
   var W = 60, H = 19; // splash stage, in character cells — shared by every scene
-  var ROTATE_KEY = "shieldchipiii.splash"; // per-load rotation counter
+  var ROTATE_KEY = "shieldchipiii.splash"; // rotation counter, advanced per full splash
+  var DAY_KEY = "shieldchipiii.splashDay"; // date of the last full splash
 
   function reducedMotion() {
     return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -192,16 +194,32 @@
     sceneById[scene.id] = scene;
   }
 
-  // Rotation: every page load plays the next registered scene, in registration
-  // (= script tag) order. ?splash=<id> pins one — handy for demos.
-  function pickScene() {
-    if (!scenes.length) return null;
+  // ?splash=<id> pins a scene — handy for demos. A pinned load always plays
+  // the full scene and leaves the rotation and the once-a-day marker alone.
+  function pinnedScene() {
     var m = location.search.match(/[?&]splash=([a-z]+)/);
-    if (m && sceneById[m[1]]) return sceneById[m[1]];
+    return (m && sceneById[m[1]]) || null;
+  }
+
+  // Rotation: every full splash plays the next registered scene, in
+  // registration (= script tag) order.
+  function nextScene() {
     var i = parseInt(localStorage.getItem(ROTATE_KEY), 10);
     if (isNaN(i) || i < 0) i = 0;
     localStorage.setItem(ROTATE_KEY, String((i + 1) % scenes.length));
     return scenes[i % scenes.length];
+  }
+
+  // The short greeting for repeat visits: the settled logo plus the usual
+  // landing — the way every scene signs off, without the scene. ~1s.
+  function shortFrames() {
+    var c = sceneCtx();
+    var base = c.ribbon.concat(c.wordmark);
+    var g = blankGrid();
+    drawCells(g, base);
+    var frames = [{ grid: g, ms: 160 }];
+    landing(frames, base);
+    return frames;
   }
 
   // ---------- repair frames: micro effect handing off to the '@' marker ----------
@@ -297,8 +315,22 @@
   // ---------- public: splash ----------
 
   function splash() {
-    var scene = pickScene();
-    if (!scene) return;
+    if (!scenes.length) return;
+
+    // The full scene is a once-a-day moment (and always plays when pinned);
+    // every other load gets the one-second landing so the brand greets
+    // without ever standing between the user and the glass.
+    var pinned = pinnedScene();
+    var today = new Date().toISOString().slice(0, 10);
+    var frames;
+    if (pinned) {
+      frames = pinned.build(sceneCtx());
+    } else if (localStorage.getItem(DAY_KEY) !== today) {
+      localStorage.setItem(DAY_KEY, today);
+      frames = nextScene().build(sceneCtx());
+    } else {
+      frames = shortFrames();
+    }
 
     var overlay = document.createElement("div");
     overlay.className = "splash-overlay anim-stage";
@@ -322,7 +354,6 @@
     window.addEventListener("keydown", close);
     window.addEventListener("resize", refit);
 
-    var frames = scene.build(sceneCtx());
     if (reducedMotion()) {
       // no motion: the settled logo with slogan and note, one quiet beat, gone
       pre.innerHTML = render(frames[frames.length - 1].grid);
