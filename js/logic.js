@@ -1,10 +1,12 @@
 /* shieldchipiii — status model, event timeline, repair recommendation.
  * Shared by browser and CLI (UMD-ish). Pure data logic, no DOM, no i18n:
- * everything returns keys that i18n.js / the CLI turn into text. */
+ * everything returns keys that i18n.js / the CLI turn into text.
+ * The one dependency is shapes.js — normalizeCar migrates the shape adjustments
+ * on the way in, and what a stored value means is geometry's to say. */
 (function (root, factory) {
-  if (typeof module === "object" && module.exports) module.exports = factory();
-  else { root.SC = root.SC || {}; root.SC.logic = factory(); }
-})(typeof self !== "undefined" ? self : this, function () {
+  if (typeof module === "object" && module.exports) module.exports = factory(require("./shapes.js"));
+  else { root.SC = root.SC || {}; root.SC.logic = factory(root.SC.shapes); }
+})(typeof self !== "undefined" ? self : this, function (shapes) {
   "use strict";
 
   // Event types that set the marker's current status, in lifecycle order.
@@ -219,17 +221,21 @@
     return out;
   }
 
-  // Shape/adjust aren't checked here — geometry belongs to shapes.js, and
-  // paramsFor() clamps every value it takes from `adjust` anyway. Country is
-  // the same deal: sources.normalize() decides what's a country we have
-  // criteria for, so an unknown code survives the trip and falls back on read.
+  // Adjust values aren't range-checked here — paramsFor() clamps every one it
+  // takes anyway. It is migrated here, though: this is the one way data gets in,
+  // from storage and from share links alike, so a pane drawn under the old
+  // `aspect` knob arrives as the real height it always meant. Country is the
+  // "leave it to the owner" deal: sources.normalize() decides what's a country
+  // we have criteria for, so an unknown code survives the trip and falls back
+  // on read.
   function normalizeCar(car) {
     if (!car || typeof car !== "object" || !car.id) return null;
+    var shape = cleanText(car.shape, MAX.shape) || "sedan";
     return {
       id: cleanText(car.id, MAX.id),
       name: cleanText(car.name, MAX.name),
-      shape: cleanText(car.shape, MAX.shape) || "sedan",
-      adjust: car.adjust && typeof car.adjust === "object" ? car.adjust : null,
+      shape: shape,
+      adjust: shapes.migrateAdjust(shape, car.adjust),
       wheel: car.wheel === "right" ? "right" : "left",
       country: cleanText(car.country, MAX.country).toLowerCase(),
       chips: (Array.isArray(car.chips) ? car.chips : []).map(normalizeChip).filter(Boolean),

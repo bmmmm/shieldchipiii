@@ -38,14 +38,6 @@ body:
     validations:
       required: true
   - type: input
-    id: aspect
-    attributes:
-      label: aspect
-      description: Drawn glass height / bounding-box width (0.20-0.65)
-      placeholder: "0.36"
-    validations:
-      required: true
-  - type: input
     id: round
     attributes:
       label: round
@@ -66,10 +58,33 @@ body:
     attributes:
       label: width_cm
       description: >
-        Real pane width in centimetres (100-200). This one carries the scale:
-        the 10 cm edge margin and the 29 cm field of view are measured against
-        it, so a preset without it can't judge a chip.
+        Real pane width in centimetres (100-200), measured along the glass.
+        This and height_cm carry the scale: the 10 cm edge margin and the 29 cm
+        field of view are measured against them, so a preset without them can't
+        judge a chip.
       placeholder: "142"
+    validations:
+      required: true
+  - type: input
+    id: height_cm
+    attributes:
+      label: height_cm
+      description: >
+        Real pane height in centimetres (50-130), measured along the glass —
+        following the slope, not the height it appears to have from the seat.
+      placeholder: "85"
+    validations:
+      required: true
+  - type: input
+    id: rake
+    attributes:
+      label: rake
+      description: >
+        How much of the real height is left once the screen leans away from the
+        driver (0.35-1.00) — 0.84 for a steep van screen, 0.54 for a flat sports
+        one. Prefilled from the preset you started from; leave it as it comes
+        unless your screen is clearly steeper or flatter than that preset's.
+      placeholder: "0.60"
     validations:
       required: true
   - type: input

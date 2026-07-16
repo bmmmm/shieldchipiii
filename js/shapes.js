@@ -18,7 +18,6 @@
   // windshield looks close to rectangular from inside, not strongly trapezoid.
   //   top    = top edge width / bounding-box width
   //   bottom = bottom edge width / bounding-box width (the narrow one here)
-  //   aspect = glass height / bounding-box width      (drawn, foreshortened)
   //   round  = corner radius / glass height
   //   bow    = vertical arch of top/bottom edges / glass height (0 = straight;
   //            glass is tallest at the centreline, like a real windshield)
@@ -26,17 +25,27 @@
   //            the drawing a scale so the 10 cm edge margin and the 29 cm field
   //            of view are real distances, not fractions of the picture.
   //            Vertical cm differ from horizontal cm because of the foreshortening.
+  //   rake   = how much of the real height survives the foreshortening. The
+  //            flatter the screen, the more it leans away and the shorter it
+  //            reads from the driver's seat (sport 0.54 < van 0.84).
   //   wheelCm = steering wheel diameter. Typical: 38-40 comfort (saloon/estate/
   //            SUV), 36-37 compact/sporty, 32-35 aftermarket sports wheels.
+  //
+  // The real pane is the input, the drawing the output:
+  //   aspect = glass height / bounding-box width (drawn, foreshortened)
+  //          = (heightCm / widthCm) * rake
+  // so nothing can be drawn taller than the pane the verdicts measure against.
   var PRESETS = {
-    compact: { top: 1.00, bottom: 0.90, aspect: 0.40, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76,  wheelCm: 37 },
-    sedan:   { top: 1.00, bottom: 0.88, aspect: 0.36, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85,  wheelCm: 38 },
-    suv:     { top: 1.00, bottom: 0.92, aspect: 0.44, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92,  wheelCm: 39 },
+    compact: { top: 1.00, bottom: 0.90, round: 0.10, bow: 0.06, widthCm: 130, heightCm: 76,  rake: 0.68, wheelCm: 37 },
+    sedan:   { top: 1.00, bottom: 0.88, round: 0.12, bow: 0.07, widthCm: 142, heightCm: 85,  rake: 0.60, wheelCm: 38 },
+    suv:     { top: 1.00, bottom: 0.92, round: 0.10, bow: 0.05, widthCm: 150, heightCm: 92,  rake: 0.72, wheelCm: 39 },
     // Van: screen is steep, so perspective barely widens the top and the body
-    // taper wins — the only preset that stays (just) wider at the bottom.
-    van:     { top: 0.98, bottom: 1.00, aspect: 0.55, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104, wheelCm: 40 },
-    // Sport: flattest screen -> the top edge is nearest -> widest at the top.
-    sport:   { top: 1.00, bottom: 0.82, aspect: 0.28, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72,  wheelCm: 34 },
+    // taper wins — the only preset that stays (just) wider at the bottom. Steep
+    // also means the least foreshortening, hence the highest rake.
+    van:     { top: 0.98, bottom: 1.00, round: 0.06, bow: 0.03, widthCm: 158, heightCm: 104, rake: 0.84, wheelCm: 40 },
+    // Sport: flattest screen -> the top edge is nearest -> widest at the top,
+    // and the pane reads shortest of all.
+    sport:   { top: 1.00, bottom: 0.82, round: 0.16, bow: 0.09, widthCm: 138, heightCm: 72,  rake: 0.54, wheelCm: 34 },
   };
   var PRESET_ORDER = ["compact", "sedan", "suv", "van", "sport"];
 
@@ -49,39 +58,73 @@
   var LIMITS = {
     top:    { min: 0.35, max: 1.00 },
     bottom: { min: 0.50, max: 1.00 },
-    aspect: { min: 0.20, max: 0.65 },
     round:  { min: 0.00, max: 0.25 },
     bow:    { min: 0.00, max: 0.15 },
     widthCm: { min: 100, max: 200 },
+    heightCm: { min: 50, max: 130 },
+    rake:   { min: 0.35, max: 1.00 },
+    // Not a knob — the fence around the derived aspect, so that no combination
+    // of a real width and a real height draws a pane taller than it is wide.
+    aspect: { min: 0.20, max: 0.65 },
     wheelCm: { min: 32, max: 42 },
   };
 
   function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+  function num(v, fallback) { return typeof v === "number" && isFinite(v) ? v : fallback; }
+
+  // An unknown shape reads as a sedan — the same fallback everywhere, so a
+  // migration and the render it feeds can never resolve to different presets.
+  function presetFor(shape) { return PRESETS[shape] || PRESETS.sedan; }
 
   // Effective shape params for a car: preset overridden by per-car adjustments.
   // `adjust` can arrive from a share link, so a value that isn't a real number
   // falls back to the preset instead of turning the whole pane into NaN — which
   // renders as an empty SVG with nothing to say why.
   function paramsFor(car) {
-    var base = PRESETS[car && car.shape] || PRESETS.sedan;
+    var base = presetFor(car && car.shape);
     var adj = (car && car.adjust) || {};
-    function num(v, fallback) { return typeof v === "number" && isFinite(v) ? v : fallback; }
     function pick(key, dflt) {
       return clamp(num(adj[key], num(base[key], dflt)), LIMITS[key].min, LIMITS[key].max);
     }
     var widthCm = pick("widthCm", 142);
+    var heightCm = pick("heightCm", 85);
+    // Adjustable like the cm pair: the preset seeds the screen's lean, and the
+    // slider is for panes whose lean no preset matches (issue #3, D1).
+    var rake = pick("rake", 0.60);
     return {
       top: pick("top", 1),
       bottom: pick("bottom", 1),
-      aspect: pick("aspect", 0.36),
       round: pick("round", 0.12),
       bow: pick("bow", 0),
       widthCm: widthCm,
-      // Real height keeps the preset's real proportions when width is adjusted.
-      heightCm: num(base.heightCm, 85) * (widthCm / num(base.widthCm, 142)),
+      heightCm: heightCm,
+      rake: rake,
+      // Derived, never stored: the drawing follows the real pane, not the
+      // other way round.
+      aspect: clamp((heightCm / widthCm) * rake, LIMITS.aspect.min, LIMITS.aspect.max),
       // Wheel diameter is absolute — it does not scale with the pane.
       wheelCm: pick("wheelCm", 38),
     };
+  }
+
+  // Saved data and every share link ever handed out carry `adjust.aspect` — the
+  // drawn height, from when that was the stored knob. Undo the derivation with
+  // the preset's rake so the pane keeps the shape its owner drew; the real
+  // height that implies is what they were choosing all along, they just said it
+  // in picture units. Called from logic.normalizeCar — the one way data gets in.
+  function migrateAdjust(shape, adj) {
+    if (!adj || typeof adj !== "object" || Array.isArray(adj)) return null;
+    var out = {};
+    Object.keys(adj).forEach(function (k) { if (k !== "aspect") out[k] = adj[k]; });
+    if (!("aspect" in adj) || "heightCm" in out) return out;
+    var base = presetFor(shape);
+    var aspect = num(adj.aspect, null);
+    // Junk where the aspect was says nothing about the height: drop it and let
+    // paramsFor fall back to the preset, exactly as it did for a junk aspect.
+    if (aspect === null) return out;
+    var widthCm = clamp(num(adj.widthCm, num(base.widthCm, 142)), LIMITS.widthCm.min, LIMITS.widthCm.max);
+    out.heightCm = (aspect * widthCm) / clamp(num(base.rake, 0.60), LIMITS.rake.min, LIMITS.rake.max);
+    return out;
   }
 
   // Corner points for a given bottom width, origin at top-left of the glass
@@ -296,7 +339,8 @@
   return {
     PRESETS: PRESETS, PRESET_ORDER: PRESET_ORDER, LIMITS: LIMITS,
     FOV_CM: FOV_CM,
-    paramsFor: paramsFor, corners: corners, edgesAt: edgesAt,
+    presetFor: presetFor, paramsFor: paramsFor, migrateAdjust: migrateAdjust,
+    corners: corners, edgesAt: edgesAt,
     outlineSamples: outlineSamples, edgeDistanceCm: edgeDistanceCm,
     inMargin: inMargin, marginInset: marginInset,
     chipToBox: chipToBox, boxToChip: boxToChip, outlinePath: outlinePath,
