@@ -872,4 +872,12 @@
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
+
+  // This browser holds the data's only copy — there is no server. Ask not to
+  // be evicted under storage pressure; an installed PWA gets this granted
+  // almost always, and where it isn't supported the promise just resolves
+  // false. Nothing to show the user: the remedy is installing the app.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(function () {});
+  }
 })();
