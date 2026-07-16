@@ -381,3 +381,38 @@ html { scroll-behavior: smooth; }
   body.report-open .report-sheet { width: auto; margin: 0; padding: 0; border-radius: 0; }
   body.report-open .report-actions { display: none !important; }
 }
+
+/* ---------- brand animations (splash + repair micro-effect, js/anim.js) ---------- */
+/* The splash is a cinema moment: always the dark stage, whatever the theme —
+   the animation's colors are tuned for it. */
+.splash-overlay {
+  position: fixed; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d1117; cursor: pointer;
+}
+/* Menlo first, not var(--mono): the art is built from █ blocks, and Monaco
+   (--mono's macOS fallback) leaves hairline gaps between block rows — Menlo,
+   Consolas and Liberation Mono all fill the line box. */
+.splash-overlay pre, .repair-fx { margin: 0; line-height: 1; white-space: pre;
+  font-family: Menlo, Consolas, "Liberation Mono", ui-monospace, monospace; }
+.repair-fx {
+  position: absolute; z-index: 6; /* above the marker popup (5) */
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-size: 14px;
+}
+.anim-stage .y    { color: #ffd500; text-shadow: 0 0 6px rgba(255, 213, 0, .35); }
+.anim-stage .r    { color: #e2001a; text-shadow: 0 0 6px rgba(226, 0, 26, .35); }
+.anim-stage .rg   { color: #ff2d2d; text-shadow: 0 0 10px rgba(255, 45, 45, .6); }
+.anim-stage .fg   { color: #e6edf3; }
+.anim-stage .dim  { color: #98a2ad; }
+.anim-stage .glow { color: #fff; text-shadow: 0 0 12px #fff, 0 0 20px rgba(255, 255, 255, .65); }
+.anim-stage .yglow { color: #ffd500; text-shadow: 0 0 10px rgba(255, 213, 0, .9), 0 0 20px rgba(255, 213, 0, .5); }
+@media (prefers-color-scheme: light) {
+  /* the marker effect plays over the light glass — white glow and pale yellow
+     would vanish there (the splash keeps its own dark stage and needs none) */
+  .repair-fx .glow { color: #1f2328; text-shadow: none; }
+  .repair-fx .fg   { color: #1f2328; }
+  .repair-fx .dim  { color: #656d76; }
+  .repair-fx .y, .repair-fx .yglow { color: #9a6700; text-shadow: none; }
+}

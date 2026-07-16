@@ -22,6 +22,7 @@ var STAMPED = [
   "js/render.js",
   "js/qr.js",
   "js/report.js",
+  "js/anim.js",
   "js/app.js",
 ];
 var PLAIN = ["./", "index.html", "favicon.svg", "manifest.webmanifest"];

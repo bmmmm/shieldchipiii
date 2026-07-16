@@ -395,6 +395,12 @@
     refreshPopup();
     renderWindshield();
     renderChipTable();
+    // Marking a repair gets its little moment: the brand micro-animation plays
+    // over the marker and hands off to the '@' the rerender just drew.
+    if (type === "repair_planned") {
+      var pos = render.markerElementPos(svg, car(), chip);
+      window.SC.anim.repairFx($("glassStage"), pos.x, pos.y);
+    }
   });
 
   // ---------- top controls ----------
@@ -854,6 +860,10 @@
   });
 
   // ---------- boot ----------
+  // Brand splash first, so it's on screen before the first paint. Pure
+  // garnish: skippable, reduced-motion aware, and never in front of the
+  // import dialog a shared link opens.
+  if (!/^#[ij]:/.test(location.hash)) window.SC.anim.splash();
   rerenderAll();
   handleHash();
 
