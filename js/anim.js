@@ -1,11 +1,14 @@
-/* shieldchipiii — CARGLASS-style brand animations: the page-load splash and
- * the "repair planned" marker micro-effect. ASCII frames stepped like a
- * terminal, not tweened. Browser-only garnish the CLI never loads: skippable
- * (any click or key), aria-hidden, and gone entirely under reduced motion. */
+/* shieldchipiii — brand animation engine: grid primitives, the shared logo
+ * geometry, a scene registry and the overlay player. The splash scenes
+ * themselves live in js/anim-*.js and register here; page loads rotate
+ * through them. ASCII frames stepped like a terminal, not tweened.
+ * Browser-only garnish the CLI never loads: skippable (any click or key),
+ * aria-hidden, and gone entirely under reduced motion. */
 (function () {
   "use strict";
 
-  var W = 60, H = 17; // splash stage, in character cells
+  var W = 60, H = 19; // splash stage, in character cells — shared by every scene
+  var ROTATE_KEY = "shieldchipiii.splash"; // per-load rotation counter
 
   function reducedMotion() {
     return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -13,7 +16,18 @@
 
   // ---------- grid primitives ----------
 
-  function blankGrid(w, h) {
+  function blankGrid() {
+    var g = [], r, c, row;
+    for (r = 0; r < H; r++) {
+      row = [];
+      for (c = 0; c < W; c++) row.push({ ch: " ", cls: "" });
+      g.push(row);
+    }
+    return g;
+  }
+
+  // The repair micro-effect runs on its own small stage.
+  function smallGrid(w, h) {
     var g = [], r, c, row;
     for (r = 0; r < h; r++) {
       row = [];
@@ -30,6 +44,11 @@
 
   function drawCells(g, cells) {
     for (var i = 0; i < cells.length; i++) set(g, cells[i].row, cells[i].col, cells[i].ch, cells[i].cls);
+  }
+
+  function writeText(g, row, text, cls) {
+    var left = Math.floor((W - text.length) / 2);
+    for (var k = 0; k < text.length; k++) set(g, row, left + k, text[k], cls);
   }
 
   function escChar(ch) {
@@ -60,7 +79,7 @@
     return html;
   }
 
-  // ---------- logo geometry ----------
+  // ---------- shared logo geometry ----------
 
   // The ribbon: 5 segments sheared like italic text — yellow taper, yellow and
   // red parallelograms, red tail running out to a point at the top right.
@@ -103,7 +122,7 @@
     R: ["####.", "#...#", "####.", "#.#..", "#..#."],
     S: [".####", "#....", ".###.", "....#", "####."],
   };
-  var WORD_TOP = 8;
+  var RIBBON_TOP = 2, WORD_TOP = 8;
 
   function buildWordmark() {
     var word = "CARGLASS", cells = [], colBase = 0, i, gr, gc, glyph;
@@ -123,139 +142,72 @@
     return out;
   }
 
-  var IMPACT = { row: 7, col: 30 };
+  // ---------- unified landing: slogan + unofficial note ----------
 
-  // Five hand-authored jagged branches, interleaved so they grow together.
-  function buildCrackOrder() {
-    var branches = [
-      [{ row: 6, col: 31, ch: "/" }, { row: 5, col: 32, ch: "'" }, { row: 4, col: 33, ch: "/" }, { row: 3, col: 34, ch: "`" }, { row: 2, col: 35, ch: "/" }],
-      [{ row: 6, col: 29, ch: "\\" }, { row: 5, col: 28, ch: "`" }, { row: 4, col: 26, ch: "\\" }, { row: 3, col: 25, ch: "," }, { row: 2, col: 23, ch: "\\" }],
-      [{ row: 7, col: 32, ch: "-" }, { row: 7, col: 34, ch: "." }, { row: 8, col: 36, ch: "-" }, { row: 8, col: 38, ch: "'" }],
-      [{ row: 7, col: 28, ch: "-" }, { row: 7, col: 26, ch: "." }, { row: 8, col: 24, ch: "-" }, { row: 8, col: 22, ch: "'" }],
-      [{ row: 8, col: 30, ch: "|" }, { row: 9, col: 30, ch: "." }, { row: 10, col: 31, ch: "`" }, { row: 11, col: 30, ch: "|" }],
-    ];
-    var out = [], i, b;
-    var maxLen = 0;
-    branches.forEach(function (br) { if (br.length > maxLen) maxLen = br.length; });
-    for (i = 0; i < maxLen; i++)
-      for (b = 0; b < branches.length; b++)
-        if (branches[b][i]) out.push({ row: branches[b][i].row, col: branches[b][i].col, ch: branches[b][i].ch, cls: "dim" });
-    return out;
+  var SLOGAN = "IHR AUTOGLAS EXPERTE NR.1";
+  var NOTE = "DEMO · KEINE OFFIZIELLE CARGLASS-APP";
+  var SLOGAN_ROW = 14, NOTE_ROW = 16;
+
+  // Appends the shared ending to a scene's frames: the finished logo (base),
+  // the yellow slogan typing in, then the dim unofficial note and a hold.
+  // Every scene lands here, so every splash signs off identically.
+  function landing(frames, base) {
+    var i, k, g, n;
+    for (i = 1; i <= 3; i++) {
+      n = Math.ceil(SLOGAN.length * i / 3);
+      g = blankGrid();
+      drawCells(g, base);
+      var left = Math.floor((W - SLOGAN.length) / 2);
+      for (k = 0; k < n; k++) set(g, SLOGAN_ROW, left + k, SLOGAN[k], "y");
+      frames.push({ grid: g, ms: i < 3 ? 80 : 140 });
+    }
+    g = blankGrid();
+    drawCells(g, base);
+    writeText(g, SLOGAN_ROW, SLOGAN, "y");
+    writeText(g, NOTE_ROW, NOTE, "dim");
+    frames.push({ grid: g, ms: 650 });
   }
 
-  // ---------- splash frames: impact → crack → glowing-edge sweep → glint → tagline ----------
+  // ---------- scene registry ----------
 
-  function buildSplashFrames() {
-    var ribbon = buildRibbon();
-    var wordmark = buildWordmark();
-    var crackOrder = buildCrackOrder();
-    var frames = [], g, i, k, r;
-
-    // A: projectile approach (accelerating inward)
-    var path = [
-      { row: 1, col: 52, ch: "·", cls: "dim" },
-      { row: 2, col: 45, ch: "∙", cls: "fg" },
-      { row: 4, col: 38, ch: "∙", cls: "fg" },
-      { row: 6, col: 32, ch: "●", cls: "rg" },
-    ];
-    var pathHold = [130, 105, 85, 65];
-    for (i = 0; i < path.length; i++) {
-      g = blankGrid(W, H);
-      set(g, path[i].row, path[i].col, path[i].ch, path[i].cls);
-      frames.push({ grid: g, ms: pathHold[i] });
+  // What a scene's build() gets to work with. Geometry is built once, lazily —
+  // scenes register at parse time, the context is only needed at play time.
+  var ctx = null;
+  function sceneCtx() {
+    if (!ctx) {
+      ctx = {
+        W: W, H: H,
+        RIBBON_TOP: RIBBON_TOP, WORD_TOP: WORD_TOP,
+        blankGrid: blankGrid, set: set, drawCells: drawCells, writeText: writeText,
+        ribbon: buildRibbon(), wordmark: buildWordmark(),
+        landing: landing,
+      };
     }
+    return ctx;
+  }
 
-    // B: impact flash
-    g = blankGrid(W, H);
-    set(g, IMPACT.row, IMPACT.col, "✳", "glow");
-    set(g, IMPACT.row - 1, IMPACT.col, ".", "glow");
-    set(g, IMPACT.row + 1, IMPACT.col, ".", "glow");
-    set(g, IMPACT.row, IMPACT.col - 1, ".", "glow");
-    set(g, IMPACT.row, IMPACT.col + 1, ".", "glow");
-    frames.push({ grid: g, ms: 70 });
-    g = blankGrid(W, H);
-    set(g, IMPACT.row, IMPACT.col, "*", "rg");
-    frames.push({ grid: g, ms: 90 });
+  var scenes = [], sceneById = {};
+  function registerScene(scene) {
+    scenes.push(scene);
+    sceneById[scene.id] = scene;
+  }
 
-    // C: crack growth, accelerating along the interleaved branches
-    var crackSchedule = [2, 4, 7, 10, 13, 16, 19, 22];
-    var crackHold = [110, 100, 90, 82, 75, 70, 66, 63];
-    var lastCrackGrid = null;
-    for (i = 0; i < crackSchedule.length; i++) {
-      g = blankGrid(W, H);
-      set(g, IMPACT.row, IMPACT.col, "*", "rg");
-      for (k = 0; k < crackSchedule[i]; k++) set(g, crackOrder[k].row, crackOrder[k].col, crackOrder[k].ch, crackOrder[k].cls);
-      frames.push({ grid: g, ms: crackHold[i] });
-      lastCrackGrid = g;
-    }
-
-    // D: stillness beat ("oh no")
-    frames.push({ grid: lastCrackGrid, ms: 320 });
-
-    // E: squeegee sweep — a single bright column rides the sweep front; crack
-    // characters die exactly as the edge reaches their column, the finished
-    // logo is what the edge leaves behind.
-    var sweepWeights = [1, 2, 3, 4, 5, 5, 4, 3, 2, 1]; // ease in, plateau, ease out
-    var minCol = -8, maxCol = W + 8;
-    var totalWeight = 0;
-    sweepWeights.forEach(function (w) { totalWeight += w; });
-    var scale = (maxCol - minCol) / totalWeight;
-    var runningCol = minCol;
-    var sweepCols = sweepWeights.map(function (w) { runningCol += w * scale; return Math.round(runningCol); });
-    sweepCols[sweepCols.length - 1] = maxCol;
-    var leadWordmark = 5;
-    for (i = 0; i < sweepCols.length; i++) {
-      var edgeCol = sweepCols[i];
-      g = blankGrid(W, H);
-      crackOrder.forEach(function (p) { if (p.col > edgeCol) set(g, p.row, p.col, p.ch, p.cls); });
-      if (IMPACT.col > edgeCol) set(g, IMPACT.row, IMPACT.col, "*", "rg");
-      ribbon.forEach(function (c) { if (c.col <= edgeCol) set(g, c.row, c.col, c.ch, c.cls); });
-      wordmark.forEach(function (c) { if (c.col <= edgeCol - leadWordmark) set(g, c.row, c.col, c.ch, c.cls); });
-      for (r = 2; r <= 12; r++) set(g, r, edgeCol, "┃", "glow");
-      frames.push({ grid: g, ms: 60 });
-    }
-
-    // F: settle — finished logo, no damage, no bar
-    g = blankGrid(W, H);
-    drawCells(g, ribbon);
-    drawCells(g, wordmark);
-    frames.push({ grid: g, ms: 240 });
-
-    // G: one-pass glint across the ribbon
-    var glintSteps = 9;
-    var ribbonMinC = Infinity, ribbonMaxC = -Infinity;
-    ribbon.forEach(function (c) { if (c.col < ribbonMinC) ribbonMinC = c.col; if (c.col > ribbonMaxC) ribbonMaxC = c.col; });
-    var span = ribbonMaxC - ribbonMinC + 4;
-    for (i = 0; i < glintSteps; i++) {
-      g = blankGrid(W, H);
-      drawCells(g, ribbon);
-      drawCells(g, wordmark);
-      var glintCol = Math.round(ribbonMinC - 2 + span * (i / (glintSteps - 1)));
-      ribbon.forEach(function (c) { if (c.col >= glintCol - 1 && c.col <= glintCol + 1) set(g, c.row, c.col, c.ch, "glow"); });
-      frames.push({ grid: g, ms: 55 });
-    }
-
-    // H: landing — typed tagline under the wordmark, then the final hold
-    var tagline = "· STONE-CHIP LOGBOOK ·";
-    var tagRow = WORD_TOP + 6;
-    var tagLeft = Math.floor((W - tagline.length) / 2);
-    for (i = 1; i <= 4; i++) {
-      var n = Math.ceil(tagline.length * i / 4);
-      g = blankGrid(W, H);
-      drawCells(g, ribbon);
-      drawCells(g, wordmark);
-      for (k = 0; k < n; k++) set(g, tagRow, tagLeft + k, tagline[k], "dim");
-      frames.push({ grid: g, ms: i < 4 ? 70 : 90 });
-    }
-    frames.push({ grid: frames[frames.length - 1].grid, ms: 400 });
-
-    return frames;
+  // Rotation: every page load plays the next registered scene, in registration
+  // (= script tag) order. ?splash=<id> pins one — handy for demos.
+  function pickScene() {
+    if (!scenes.length) return null;
+    var m = location.search.match(/[?&]splash=([a-z]+)/);
+    if (m && sceneById[m[1]]) return sceneById[m[1]];
+    var i = parseInt(localStorage.getItem(ROTATE_KEY), 10);
+    if (isNaN(i) || i < 0) i = 0;
+    localStorage.setItem(ROTATE_KEY, String((i + 1) % scenes.length));
+    return scenes[i % scenes.length];
   }
 
   // ---------- repair frames: micro effect handing off to the '@' marker ----------
 
   // Small 7×3 stage centered on the marker: crack collapses, a mini ribbon
-  // flicks across with the same white glow as the splash sweep's edge, and the
+  // flicks across with the same white glow as the splash sweeps, and the
   // sequence settles on '@' — the exact glyph the app draws for
   // "repair planned", so the animation dissolves into the marker itself.
   function buildRepairFrames() {
@@ -267,13 +219,13 @@
       { row: CY, col: CX - 2, ch: "-" }, { row: CY, col: CX + 2, ch: "-" },
     ];
 
-    g = blankGrid(RW, RH);
+    g = smallGrid(RW, RH);
     set(g, CY, CX, "*", "fg");
     crackPts.forEach(function (p) { set(g, p.row, p.col, p.ch, "dim"); });
     frames.push({ grid: g, ms: 140 });
 
     // collapse inward
-    g = blankGrid(RW, RH);
+    g = smallGrid(RW, RH);
     set(g, CY, CX, "*", "fg");
     crackPts.slice(0, 3).forEach(function (p) {
       var mr = p.row === CY ? CY : (p.row < CY ? p.row + 1 : p.row - 1);
@@ -281,22 +233,22 @@
       set(g, mr, mc, ".", "dim");
     });
     frames.push({ grid: g, ms: 90 });
-    g = blankGrid(RW, RH);
+    g = smallGrid(RW, RH);
     set(g, CY, CX, "*", "rg");
     frames.push({ grid: g, ms: 90 });
 
     // mini ribbon flick across the point
     var flick = [{ ch: "◢", cls: "y" }, { ch: "█", cls: "glow" }, { ch: "◤", cls: "r" }];
     for (i = 0; i < flick.length; i++) {
-      g = blankGrid(RW, RH);
+      g = smallGrid(RW, RH);
       set(g, CY, CX + i - 1, flick[i].ch, flick[i].cls);
       frames.push({ grid: g, ms: 70 });
     }
 
     // hand off to the marker glyph: bright pulse settling to yellow
-    g = blankGrid(RW, RH); set(g, CY, CX, "@", "glow"); frames.push({ grid: g, ms: 120 });
-    g = blankGrid(RW, RH); set(g, CY, CX, "@", "yglow"); frames.push({ grid: g, ms: 130 });
-    g = blankGrid(RW, RH); set(g, CY, CX, "@", "y"); frames.push({ grid: g, ms: 300 });
+    g = smallGrid(RW, RH); set(g, CY, CX, "@", "glow"); frames.push({ grid: g, ms: 120 });
+    g = smallGrid(RW, RH); set(g, CY, CX, "@", "yglow"); frames.push({ grid: g, ms: 130 });
+    g = smallGrid(RW, RH); set(g, CY, CX, "@", "y"); frames.push({ grid: g, ms: 300 });
 
     return frames;
   }
@@ -332,7 +284,7 @@
     var charW = probe.getBoundingClientRect().width / 10;
     document.body.removeChild(probe);
     var fsForWidth = (window.innerWidth * 0.94) / (charW / 100 * W);
-    var fsForHeight = (window.innerHeight * 0.6) / H; // line-height:1 → line box ≈ font-size
+    var fsForHeight = (window.innerHeight * 0.65) / H; // line-height:1 → line box ≈ font-size
     // floored to whole pixels: a fractional size makes the block rows land on
     // fractional device pixels, which renders as hairline gaps inside the logo
     pre.style.fontSize = Math.floor(Math.max(6, Math.min(fsForWidth, fsForHeight, 30))) + "px";
@@ -341,6 +293,9 @@
   // ---------- public: splash ----------
 
   function splash() {
+    var scene = pickScene();
+    if (!scene) return;
+
     var overlay = document.createElement("div");
     overlay.className = "splash-overlay anim-stage";
     overlay.setAttribute("aria-hidden", "true");
@@ -363,14 +318,14 @@
     window.addEventListener("keydown", close);
     window.addEventListener("resize", refit);
 
+    var frames = scene.build(sceneCtx());
     if (reducedMotion()) {
-      // no motion: the settled logo, one quiet beat, gone
-      var frames = buildSplashFrames();
+      // no motion: the settled logo with slogan and note, one quiet beat, gone
       pre.innerHTML = render(frames[frames.length - 1].grid);
-      setTimeout(close, 900);
+      setTimeout(close, 1200);
       return;
     }
-    playFrames(pre, buildSplashFrames(), function () { return dead; }, close);
+    playFrames(pre, frames, function () { return dead; }, close);
   }
 
   // ---------- public: repair micro-effect at a marker ----------
@@ -389,5 +344,9 @@
   }
 
   window.SC = window.SC || {};
-  window.SC.anim = { splash: splash, repairFx: repairFx };
+  window.SC.anim = {
+    splash: splash, repairFx: repairFx, registerScene: registerScene,
+    // internal, exposed for headless scene validation in Node
+    _sceneCtx: sceneCtx, _scenes: scenes,
+  };
 })();

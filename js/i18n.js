@@ -166,6 +166,9 @@
     ruleTitle: { de: "Faustregel Reparatur", en: "Repair rule of thumb" },
     ruleBody: { de: "Reparatur statt Tausch geht in der Regel nur, wenn alle drei Punkte stimmen: der Schaden ist kleiner als eine {coin}, er liegt außerhalb des Sichtfelds (29 cm breiter Bereich — eine DIN-A4-Seite quer — über dem Lenkrad), und er ist mehr als {cm} cm vom Scheibenrand entfernt. Trifft einer nicht zu, ist eine Reparatur unwahrscheinlich — dann hilft nur, den Dienstleister zu kontaktieren und es klären zu lassen. Die Teilkasko übernimmt die Reparatur oft ohne Selbstbeteiligung. Angaben ohne Gewähr — entschieden wird in der Werkstatt.", en: "A repair instead of a replacement usually needs all three to hold: the damage is smaller than a {coin}, it sits outside the field of view (a 29 cm band — a DIN A4 sheet on its side — above the wheel), and it is more than {cm} cm from the edge. If one fails, a repair is unlikely — contact a glass service and have them check. Comprehensive insurance often covers the repair fully. No guarantee — the shop decides." },
     footerLocal: { de: "kein Server · kein Tracking · alles lokal", en: "no server · no tracking · all local" },
+    // The app pitches itself in Carglass colors, so it says out loud that it
+    // isn't from them.
+    unofficialNote: { de: "Fan-Demo — keine offizielle Carglass-App", en: "fan demo — not an official Carglass app" },
   };
 
   var KEY = "shieldchipiii.lang";
