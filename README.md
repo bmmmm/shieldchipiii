@@ -109,8 +109,9 @@ terminal.
 
 Open `index.html` in a browser. That's it — no build, no framework, no npm.
 
-Tests: `node test/smoke.js` and `node test/touch-targets.js` — no
-dependencies there either. CI runs both on every push.
+Tests: `node test/smoke.js`, `node test/touch-targets.js` and
+`node test/merge-convergence.js` (random two-device histories must converge)
+— no dependencies there either. CI runs all three on every push.
 
 Releasing: run `scripts/stamp-assets.sh` first — it stamps the asset URLs in
 `index.html` and the service worker's cache (`sw.js`) with the current commit
