@@ -1,0 +1,421 @@
+/* shieldchipiii — terminal-flavored, system fonts only. */
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --line: #30363d;
+  --fg: #e6edf3;
+  --muted: #98a2ad; /* ~5.8:1 on --panel — this colour carries 12px UI text */
+  --accent: #58a6ff;
+  --warn: #f0883e;
+  --ok: #3fb950;
+  --danger: #f85149;
+  --glass: #10161d;
+  --mono: ui-monospace, 'SF Mono', Monaco, monospace;
+  /* status palette */
+  --st-new: #f0883e;
+  --st-observing: #58a6ff;
+  --st-planned: #d29922;
+  --st-repaired: #3fb950;
+  --st-irreparable: #f85149;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f8fa; --panel: #ffffff; --line: #d0d7de; --fg: #1f2328;
+    --muted: #656d76; --accent: #0969da; --warn: #bc4c00; --ok: #1a7f37;
+    --danger: #cf222e; --glass: #eef2f6;
+  }
+}
+
+* { box-sizing: border-box; }
+/* `hidden` must win over the display rules below (.overlay/.grid set display). */
+[hidden] { display: none !important; }
+body {
+  margin: 0 auto;
+  max-width: 860px;
+  padding: 0 16px 40px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+header { position: relative; padding: 24px 0 4px; }
+h1 { margin: 0; font-size: 26px; letter-spacing: 1px; }
+h2 { font-size: 15px; margin: 24px 0 8px; color: var(--accent); }
+h2::before { content: "» "; color: var(--muted); }
+.tagline { margin: 2px 0 0; color: var(--muted); }
+#langToggle { position: absolute; top: 28px; right: 0; }
+
+section { margin: 14px 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.spacer { flex: 1; }
+.muted { color: var(--muted); }
+.mono { word-break: break-all; }
+.hint { font-size: 12px; margin-top: 2px; }
+
+button, .filebtn, select, input[type="text"], input[type="date"] {
+  font: inherit;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+button, .filebtn { cursor: pointer; }
+button:hover, .filebtn:hover { border-color: var(--accent); }
+button.ghost { background: transparent; color: var(--muted); }
+button.danger { color: var(--danger); }
+.filebtn input { display: none; }
+input[type="text"] { min-width: 160px; }
+input[type="range"] { accent-color: var(--accent); max-width: 110px; }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; justify-self: start; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.tab { border-radius: 6px 6px 0 0; border-bottom: none; color: var(--muted); }
+.tab.active { color: var(--fg); border-color: var(--accent); }
+.tab.add { color: var(--accent); }
+
+.car-config { border: 1px solid var(--line); border-radius: 0 6px 6px 6px; padding: 10px 12px; background: var(--panel); }
+.seg button { border-radius: 0; margin: 0; }
+.seg button:first-child { border-radius: 6px 0 0 6px; }
+.seg button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.seg button.active, .shape-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+#shapeButtons { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+details.adjust summary { cursor: pointer; color: var(--muted); margin-top: 4px; }
+.sliders label { color: var(--muted); font-size: 12px; }
+.sliders .pair { display: inline-flex; align-items: center; gap: 8px; }
+
+/* windshield SVG */
+.glass-wrap { text-align: center; }
+#windshield { width: 100%; height: auto; touch-action: none; cursor: crosshair; }
+.glass { fill: var(--glass); stroke: var(--fg); stroke-width: 3; }
+/* Both no-repair zones read as one category — same colour, like the shop's
+   own diagram. The dashed outline tells the field of view from the rim. */
+.fov-band { fill: var(--danger); opacity: 0.13; stroke: var(--danger); stroke-width: 2; stroke-dasharray: 8 6; stroke-opacity: 0.75; }
+.margin-band { fill: var(--danger); opacity: 0.13; stroke: none; }
+.mirror { fill: var(--panel); stroke: var(--fg); stroke-width: 2.5; }
+.mirror-stalk { stroke: var(--fg); stroke-width: 2.5; }
+.dash { fill: none; stroke: var(--muted); stroke-width: 3; }
+.cockpit { fill: none; stroke: var(--muted); stroke-width: 2; opacity: 0.3; }
+.wheel .rim { fill: none; stroke: var(--muted); stroke-width: 5; }
+.wheel .hub { fill: var(--muted); opacity: 0.5; stroke: none; }
+.wheel line { stroke: var(--muted); stroke-width: 5; stroke-linecap: round; }
+
+.marker { cursor: grab; }
+.marker .hit { fill: transparent; }
+/* chips are filled dots with a bg outline; cracks are pure coloured strokes */
+.marker .chip { stroke: var(--bg); stroke-width: 2; }
+.marker .crack { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.marker .chip.m-new { fill: var(--st-new); }
+.marker .crack.m-new { stroke: var(--st-new); }
+.marker .chip.m-observing { fill: var(--st-observing); }
+.marker .crack.m-observing { stroke: var(--st-observing); }
+.marker .chip.m-planned { fill: var(--st-planned); }
+.marker .crack.m-planned { stroke: var(--st-planned); }
+.marker .chip.m-repaired { fill: var(--st-repaired); }
+.marker .crack.m-repaired { stroke: var(--st-repaired); }
+.marker .chip.m-irreparable { fill: var(--st-irreparable); }
+.marker .crack.m-irreparable { stroke: var(--st-irreparable); }
+.marker-label { fill: var(--fg); font-family: var(--mono); font-size: 22px; }
+.sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; }
+
+.legend { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+/* The country belongs to the zones above it, not to the hint below. */
+.legend-country { display: inline-flex; gap: 6px; align-items: center; margin-top: 4px; }
+.legend-country select { font-size: 13px; padding: 2px 6px; }
+.legend-zones { display: block; margin-top: 3px; }
+.legend-zones strong { color: var(--danger); font-weight: normal; }
+.lg { font-size: 15px; vertical-align: -1px; }
+.lg.m-new { color: var(--st-new); }
+.lg.m-observing { color: var(--st-observing); }
+.lg.m-planned { color: var(--st-planned); }
+.lg.m-repaired { color: var(--st-repaired); }
+.lg.m-irreparable { color: var(--st-irreparable); }
+.lg.fov { color: var(--danger); }
+.lg.edge { color: var(--danger); }
+/* derived zone facts — read-only, red when the chip is in a no-go zone */
+.zone-fact.is-hit { color: var(--danger); }
+
+/* floating marker popup */
+#glassStage { position: relative; }
+.marker-popup {
+  position: absolute; z-index: 5; width: 300px; max-width: 82vw;
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
+  padding: 10px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.35); font-size: 13px;
+}
+.popup-head { display: flex; justify-content: space-between; align-items: center; }
+.popup-head strong { font-size: 14px; }
+.pop-x { font-size: 18px; line-height: 1; padding: 0 6px; }
+.rec { margin: 8px 0; padding: 7px 9px; border-radius: 6px; border-left: 3px solid var(--muted); background: rgba(127,127,127,.08); }
+.rec-label { color: var(--muted); }
+/* Inline in running text, so the enlarged hit box must not swallow clicks
+   meant for the words beside it: grow rightward and vertically, barely left. */
+.rec-src { color: var(--muted); text-decoration: none; font-size: 12px; vertical-align: super;
+  display: inline-block; padding: 4px 6px; margin: -4px -2px; }
+.rec-src:hover, .rec-src:focus { color: var(--accent); }
+.rec.rec-ok { border-left-color: var(--ok); }
+.rec.rec-warn { border-left-color: var(--warn); }
+.rec.rec-danger { border-left-color: var(--danger); }
+.popup-fields { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 6px 0; }
+.pf { color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.pf select { color: var(--fg); }
+.pf-check { cursor: pointer; }
+.timeline { margin: 8px 0; }
+.tl-head { color: var(--accent); font-size: 12px; margin-bottom: 3px; }
+.timeline ul { list-style: none; margin: 0; padding: 0; }
+.timeline li { padding: 2px 0; border-bottom: 1px dotted var(--line); display: flex; justify-content: space-between; gap: 6px; }
+.timeline li:last-child { border-bottom: none; }
+.tl-del { border: none; background: transparent; color: var(--muted); padding: 0 4px; font-size: 14px; }
+.tl-del:hover { color: var(--danger); }
+.add-event { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.ae-field { display: flex; align-items: center; gap: 8px; }
+.ae-field > span { color: var(--muted); min-width: 46px; }
+.ae-field select, .ae-field input { flex: 1; }
+.add-event input, .add-event select { padding: 4px 8px; }
+.pop-del { margin-top: 8px; width: 100%; font-size: 12px; }
+
+/* recommendation dot in the entry table */
+.rec-dot { position: relative; }
+.rec-dot::before { content: "●"; margin-right: 5px; }
+.rec-dot.rec-ok::before { color: var(--ok); }
+.rec-dot.rec-warn::before { color: var(--warn); }
+.rec-dot.rec-danger::before { color: var(--danger); }
+#chipTable td.sym { text-align: center; }
+#chipTable tr.st-new td.sym { color: var(--st-new); }
+#chipTable tr.st-observing td.sym { color: var(--st-observing); }
+#chipTable tr.st-repair_planned td.sym { color: var(--st-planned); }
+#chipTable tr.st-repaired td.sym { color: var(--st-repaired); }
+#chipTable tr.st-irreparable td.sym { color: var(--st-irreparable); }
+
+/* chip table */
+#chipTable table { width: 100%; border-collapse: collapse; }
+#chipTable td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+#chipTable tr { cursor: pointer; }
+#chipTable tr:hover td { background: var(--panel); }
+#chipTable tr.selected td { background: var(--panel); box-shadow: inset 2px 0 var(--accent); }
+#chipTable th { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line);
+  color: var(--muted); font-size: 12px; font-weight: 600; text-transform: capitalize; }
+/* Rows and markers are keyboard buttons now — Tab needs somewhere visible to be. */
+#chipTable tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.marker:focus { outline: none; }
+.marker:focus-visible .hit { stroke: var(--accent); stroke-width: 2.5; }
+.marker-popup:focus { outline: none; }
+.marker-popup:focus-visible { outline: 2px solid var(--accent); }
+/* Text only a screen reader sees — the visual channel already carries it as
+   colour, glyph or title. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.rule { border-left: 3px solid var(--warn); padding-left: 12px; }
+.rule p { margin: 4px 0; color: var(--muted); }
+
+.danger-zone { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; max-width: 420px; }
+
+/* ---------- share / sync panel ---------- */
+.sync-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 12px; }
+/* Side by side once there's room; stacked below — mobile-first. */
+@media (min-width: 700px) {
+  .sync-grid { grid-template-columns: 1fr 1fr; }
+}
+/* min-width: 0 — a grid item's auto minimum would let the nowrap share URL
+   dictate the card's width and blow the grid past the viewport. */
+.sync-card { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 18px; min-width: 0; }
+.sync-card h3 { margin: 0 0 14px; font-size: 16px; color: var(--accent); letter-spacing: .3px; }
+.sync-card h3::before { content: "» "; color: var(--muted); }
+
+/* The QR tile is fixed white on purpose: a code must stay dark-on-light for any
+   scanner, so it does NOT follow the light/dark theme the rest of the UI does. */
+.qr-tile { background: #fff; border-radius: 10px; padding: 14px; max-width: 340px; margin: 0 auto 12px; }
+.qr-tile svg { display: block; width: 100%; height: auto; }
+
+.sync-stats { text-align: center; margin: 0 0 10px; font-size: 13px; }
+.qr-capacity { text-align: center; margin: 0 0 12px; font-size: 13px; }
+.qr-capacity.cap-ok { color: var(--ok); }
+.qr-capacity.cap-ok::before { content: "✓ "; }
+.qr-capacity.cap-danger { color: var(--danger); }
+.qr-capacity.cap-danger::before { content: "⚠ "; }
+.share-url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin: 0 0 12px; }
+
+button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+button.primary:hover { filter: brightness(1.08); border-color: var(--accent); }
+#copyLink { width: 100%; padding: 11px 16px; }
+
+/* receive: paste a link from the other device */
+.paste-import { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
+.paste-import label { display: block; margin: 0 0 6px; }
+.paste-row { display: flex; gap: 8px; }
+#pasteLink { flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; }
+
+.backup-item { margin: 0 0 16px; }
+.backup-item:last-child { margin-bottom: 0; }
+.backup-item > button, .backup-item > .filebtn { display: block; width: 100%; padding: 11px 14px; text-align: center; }
+.sync-desc { margin: 5px 0 0; font-size: 12px; }
+.sync-note { margin: 12px 0 0; }
+
+/* import dialog v2 */
+.import-dialog { max-width: 460px; width: 92vw; }
+.import-dialog h2 { margin-top: 0; }
+.import-preview { list-style: none; margin: 12px 0; padding: 0; }
+.import-preview li { padding: 7px 2px; border-bottom: 1px dotted var(--line); }
+.import-preview li:last-child { border-bottom: none; }
+.import-preview .import-more { color: var(--muted); }
+.import-hint { font-size: 12px; margin: 8px 0 18px; }
+.import-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.import-actions .primary { flex: 1; }
+.import-actions button { padding: 10px 14px; }
+
+/* toast: one reusable bottom-centre banner, colour-coded by outcome */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  max-width: 90vw; z-index: 20;
+  background: var(--panel); border: 1px solid var(--line); border-left-width: 3px;
+  border-radius: 8px; padding: 12px 16px; font-size: 13px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.35);
+}
+.toast-ok { border-left-color: var(--ok); }
+.toast-danger { border-left-color: var(--danger); }
+
+footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+footer a { color: var(--accent); text-decoration: none; }
+
+@media (max-width: 560px) {
+  .marker-popup { width: 260px; }
+}
+
+/* Touch. Every control here was sized for a cursor: the shared rule at the top
+   of this file works out to 33px tall, the country picker to 26px, the ⓘ that
+   opens a source to 17px. A finger needs about 44 (Apple HIG; Material asks
+   48dp), so on a coarse pointer they get a floor.
+   Keyed on the pointer rather than the viewport: a narrow desktop window still
+   has a precise pointer and keeps its compact controls, while a tablet is wide
+   and doesn't. Marker targets aren't here — render.js picks those by distance
+   in real pixels, since they scale with the drawing. */
+@media (pointer: coarse) {
+  /* A floor rather than more padding, so each control keeps its own spacing. */
+  button, .filebtn, select, input[type="text"], input[type="date"] { min-height: 44px; }
+  /* iOS zooms the whole page in when a text field smaller than 16px takes
+     focus, and doesn't zoom back out. Everything inherits the body's 14px, so
+     naming the vehicle would leave you scrolled sideways on the glass. */
+  input[type="text"], input[type="date"] { font-size: 16px; }
+  /* Icon buttons have no text to make them wide enough. */
+  .pop-x, .tl-del { min-width: 44px; }
+  .tl-del { min-height: 44px; font-size: 16px; }
+  /* Not a button, so the floor above misses it, and padding alone can't fix an
+     inline link: it would reach 41px and the overflow would sit invisibly over
+     the select below, catching taps meant for that. A box of its own is honest
+     about the space it takes, and 15px makes the glyph findable while it's
+     there. */
+  .rec-src {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; min-height: 44px; vertical-align: middle; font-size: 15px;
+    margin: 0; /* the fine-pointer hit-growth margins would overlap the select below */
+  }
+  /* 44px rows: the table is the easiest way to reach a chip on a phone. */
+  #chipTable td { padding: 12px 8px; }
+  /* Seven sliders on the narrowest screen — let them use the width they have. */
+  .sliders .pair { width: 100%; }
+  input[type="range"] { max-width: none; flex: 1; height: 44px; }
+  /* Finger-sized rows make a long timeline outgrow the pane the popup is
+     anchored to, and it was already the tallest thing on a phone. */
+  .marker-popup { max-height: 70vh; overflow-y: auto; }
+  /* The sync-panel and dialog CTAs are the reach-heavy controls here — give the
+     big primary and full-width backup buttons a comfortable floor above 44px. */
+  #copyLink, #pasteGo, .backup-item > button, .backup-item > .filebtn, .import-actions button { min-height: 48px; }
+}
+
+/* The app's one animation is the smooth scroll to the glass. scrollIntoView
+   is called without a behavior, so it follows this — one media query and
+   reduced motion is honoured everywhere. */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ---- workshop report: a white sheet, on screen and on paper ---- */
+.report-overlay { align-items: flex-start; overflow-y: auto; }
+/* A light variable scope: every SVG and legend rule reads its colour from a
+   variable, so the drawing restyles itself for paper without a second theme. */
+.report-sheet {
+  --bg: #fff; --panel: #f6f8fa; --line: #d0d7de; --fg: #1f2328; --muted: #57606a;
+  --accent: #0969da; --warn: #bc4c00; --ok: #1a7f37; --danger: #cf222e; --glass: #eef2f6;
+  background: #fff; color: var(--fg); width: min(820px, calc(100% - 24px));
+  margin: 20px auto; padding: 22px 28px 26px; border-radius: 8px;
+}
+.report-actions { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+/* letterhead: icon, name, date — the sheet introduces itself before the title */
+.rp-brand { display: flex; align-items: center; gap: 8px; padding-bottom: 8px;
+  margin-bottom: 12px; border-bottom: 2px solid var(--fg); }
+.rp-brand svg { width: 26px; height: 26px; flex: none; }
+.rp-brand-name { font-weight: 700; font-size: 15px; }
+.rp-brand-date { margin-left: auto; color: var(--muted); }
+.report-sheet h1 { margin: 0 0 2px; font-size: 22px; }
+.report-sheet h3 { margin: 0 0 4px; font-size: 15px; }
+.rp-meta { margin: 0 0 10px; color: var(--muted); }
+.rp-meta strong { color: var(--fg); }
+.rp-svg { break-inside: avoid; }
+.rp-svg svg { width: 100%; height: auto; }
+.rp-legend { font-size: 13px; color: var(--muted); margin: 4px 0; }
+.rp-legend strong { color: var(--danger); font-weight: normal; }
+.rp-criteria { font-size: 13px; color: var(--muted); }
+.rp-criteria a { color: var(--accent); word-break: break-all; }
+.report-sheet table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; }
+.report-sheet th, .report-sheet td { padding: 5px 8px; }
+.report-sheet th { text-align: left; font-size: 12px; color: var(--muted); text-transform: capitalize;
+  border-bottom: 2px solid var(--fg); }
+.report-sheet td { border-bottom: 1px solid var(--line); }
+.rp-chip { break-inside: avoid; margin: 12px 0; }
+.rp-tl { margin: 4px 0 0; padding-left: 20px; font-size: 13px; }
+.rp-disclaimer { color: var(--muted); font-size: 12px; margin: 16px 0 0; }
+.rp-links { color: var(--muted); font-size: 12px; margin: 4px 0 0; padding-top: 6px;
+  border-top: 1px solid var(--line); }
+.rp-links a { color: var(--accent); text-decoration: none; }
+
+@media print {
+  /* Only while the report is open — a plain cmd+P on the app stays the app. */
+  body.report-open > :not(#reportOverlay) { display: none !important; }
+  body.report-open #reportOverlay { position: static; background: none; display: block; overflow: visible; }
+  body.report-open .report-sheet { width: auto; margin: 0; padding: 0; border-radius: 0; }
+  body.report-open .report-actions { display: none !important; }
+}
+
+/* ---------- brand animations (splash + repair micro-effect, js/anim.js) ---------- */
+/* The splash is a cinema moment: always the dark stage, whatever the theme —
+   the animation's colors are tuned for it. */
+.splash-overlay {
+  position: fixed; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d1117; cursor: pointer;
+}
+/* Menlo first, not var(--mono): the art is built from █ blocks, and Monaco
+   (--mono's macOS fallback) leaves hairline gaps between block rows — Menlo,
+   Consolas and Liberation Mono all fill the line box. */
+.splash-overlay pre, .repair-fx { margin: 0; line-height: 1; white-space: pre;
+  font-family: Menlo, Consolas, "Liberation Mono", ui-monospace, monospace; }
+.repair-fx {
+  position: absolute; z-index: 6; /* above the marker popup (5) */
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-size: 14px;
+}
+.anim-stage .y    { color: #ffd500; text-shadow: 0 0 6px rgba(255, 213, 0, .35); }
+.anim-stage .r    { color: #e2001a; text-shadow: 0 0 6px rgba(226, 0, 26, .35); }
+.anim-stage .rg   { color: #ff2d2d; text-shadow: 0 0 10px rgba(255, 45, 45, .6); }
+.anim-stage .fg   { color: #e6edf3; }
+.anim-stage .dim  { color: #98a2ad; }
+.anim-stage .glow { color: #fff; text-shadow: 0 0 12px #fff, 0 0 20px rgba(255, 255, 255, .65); }
+.anim-stage .yglow { color: #ffd500; text-shadow: 0 0 10px rgba(255, 213, 0, .9), 0 0 20px rgba(255, 213, 0, .5); }
+.anim-stage .g     { color: #3fb950; text-shadow: 0 0 6px rgba(63, 185, 80, .35); }
+.anim-stage .gglow { color: #3fb950; text-shadow: 0 0 10px rgba(63, 185, 80, .9), 0 0 20px rgba(63, 185, 80, .5); }
+@media (prefers-color-scheme: light) {
+  /* the marker effect plays over the light glass — white glow and pale yellow
+     would vanish there (the splash keeps its own dark stage and needs none) */
+  .repair-fx .glow { color: #1f2328; text-shadow: none; }
+  .repair-fx .fg   { color: #1f2328; }
+  .repair-fx .dim  { color: #656d76; }
+  .repair-fx .y, .repair-fx .yglow { color: #9a6700; text-shadow: none; }
+  .repair-fx .g, .repair-fx .gglow { color: #1a7f37; text-shadow: none; }
+}

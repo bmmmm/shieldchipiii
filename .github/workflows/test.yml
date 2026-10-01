@@ -1,0 +1,31 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      # No install step: the app has no dependencies and no build, and the
+      # test loads js/*.js the same way the browser does.
+      - run: node test/smoke.js
+      # The phone is this app's primary device, and nothing else can check a
+      # touch target without a DOM.
+      - run: node test/touch-targets.js
+      # Property test over store.merge: random two-device histories must
+      # converge, re-merging must be a no-op, and deletions must stay deleted.
+      - run: node test/merge-convergence.js
+      # The CLI is the other consumer of the shared modules — check it still
+      # renders a legacy payload end to end.
+      - run: node cli/shieldchipiii.js show test/fixtures/legacy-v1.json

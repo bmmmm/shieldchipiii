@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Everything is local by design; the policy makes that enforceable — a
+       smuggled script or off-origin fetch is dead weight, not a phone-home. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'">
+  <title>shieldchipiii — windshield stone chip logbook</title>
+  <meta name="description" content="Document stone chips on your car windshield: position, size, repair status, insurance. No server, all local. / Steinschläge auf der Windschutzscheibe dokumentieren — lokal im Browser.">
+  <link rel="stylesheet" href="style.css?v=7e901c0">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#0d1117">
+</head>
+<body>
+  <header>
+    <h1>shieldchipiii</h1>
+    <p class="tagline" data-i18n="tagline"></p>
+    <button id="langToggle" class="ghost" title="Sprache / language">EN</button>
+  </header>
+
+  <main>
+    <nav id="carTabs" class="tabs"></nav>
+
+    <section class="car-config">
+      <div class="row">
+        <label for="carName" data-i18n="carName"></label>
+        <input id="carName" type="text" data-i18n-ph="carNamePh" maxlength="40">
+        <span class="spacer"></span>
+        <span data-i18n="wheel"></span>
+        <span class="seg">
+          <button id="wheelLeft" data-i18n="wheelLeft"></button><button id="wheelRight" data-i18n="wheelRight"></button>
+        </span>
+      </div>
+      <div class="row">
+        <span data-i18n="shape"></span>
+        <span id="shapeButtons"></span>
+      </div>
+      <details class="adjust">
+        <summary data-i18n="adjust"></summary>
+        <div class="row sliders">
+          <span class="pair"><label data-i18n="adjTop"></label><input id="adjTop" type="range" min="35" max="100"></span>
+          <span class="pair"><label data-i18n="adjBottom"></label><input id="adjBottom" type="range" min="50" max="100"></span>
+          <span class="pair"><label data-i18n="adjRound"></label><input id="adjRound" type="range" min="0" max="25"></span>
+          <span class="pair"><label data-i18n="adjBow"></label><input id="adjBow" type="range" min="0" max="15"></span>
+          <span class="pair"><label data-i18n="adjWidthCm"></label><input id="adjWidthCm" type="range" min="100" max="200"><output id="adjWidthCmOut" class="muted"></output></span>
+          <span class="pair"><label data-i18n="adjHeightCm"></label><input id="adjHeightCm" type="range" min="50" max="130"><output id="adjHeightCmOut" class="muted"></output></span>
+          <span class="pair"><label data-i18n="adjRake"></label><input id="adjRake" type="range" min="35" max="100"></span>
+          <span class="pair"><label data-i18n="adjWheelCm"></label><input id="adjWheelCm" type="range" min="32" max="42"><output id="adjWheelCmOut" class="muted"></output></span>
+          <button id="adjReset" class="ghost" data-i18n="adjReset"></button>
+          <button id="proposeShape" class="ghost" data-i18n="proposeShape"></button>
+        </div>
+      </details>
+    </section>
+
+    <section class="glass-wrap">
+      <div id="glassStage">
+        <svg id="windshield" role="group" aria-label="windshield diagram"></svg>
+        <div id="markerPopup" class="marker-popup" role="dialog" tabindex="-1" hidden></div>
+      </div>
+      <p class="legend" id="legend"></p>
+      <p class="legend legend-country">
+        <label for="country" data-i18n="criteriaFor"></label>
+        <select id="country"></select>
+      </p>
+      <p class="muted hint" data-i18n="hintClick"></p>
+    </section>
+
+    <section>
+      <h2 data-i18n="chips"></h2>
+      <div id="chipLoad"></div>
+      <div id="chipTable"></div>
+    </section>
+
+    <section class="share">
+      <h2 data-i18n="share"></h2>
+      <div class="sync-grid">
+        <div class="sync-card">
+          <h3 data-i18n="deviceSync"></h3>
+          <p id="shareStats" class="muted sync-stats"></p>
+          <div id="qrTile" class="qr-tile"></div>
+          <p id="qrCapacity" class="qr-capacity"></p>
+          <p id="shareUrlRead" class="muted mono share-url"></p>
+          <button id="copyLink" class="primary" data-i18n="copyLink"></button>
+          <div class="paste-import">
+            <label for="pasteLink" class="muted sync-desc" data-i18n="pasteLabel"></label>
+            <div class="paste-row">
+              <input id="pasteLink" type="text" data-i18n-ph="pastePh" autocomplete="off" spellcheck="false">
+              <button id="pasteGo" data-i18n="pasteGo"></button>
+            </div>
+          </div>
+        </div>
+        <div class="sync-card">
+          <h3 data-i18n="backup"></h3>
+          <div class="backup-item">
+            <button id="exportJson" data-i18n="exportJson"></button>
+            <p class="muted sync-desc" data-i18n="exportJsonDesc"></p>
+          </div>
+          <div class="backup-item">
+            <label class="filebtn"><span data-i18n="importJson"></span><input id="importJson" type="file" accept=".json,application/json"></label>
+            <p class="muted sync-desc" data-i18n="importJsonDesc"></p>
+          </div>
+          <div class="backup-item">
+            <button id="copyAscii" data-i18n="copyAscii"></button>
+            <p class="muted sync-desc" data-i18n="copyAsciiDesc"></p>
+          </div>
+          <div class="backup-item">
+            <button id="makeReport" data-i18n="reportBtn"></button>
+            <p class="muted sync-desc" data-i18n="reportBtnDesc"></p>
+          </div>
+        </div>
+      </div>
+      <p class="muted sync-note" data-i18n="shareNote"></p>
+      <p class="muted mono sync-note" data-i18n="terminalNote"></p>
+    </section>
+
+    <section class="rule">
+      <h2 data-i18n="ruleTitle"></h2>
+      <p data-i18n="ruleBody"></p>
+    </section>
+
+    <section class="danger-zone">
+      <button id="glassSwap" class="ghost" data-i18n="glassSwap"></button>
+      <button id="deleteCar" class="ghost danger" data-i18n="deleteCar"></button>
+    </section>
+  </main>
+
+  <div id="importOverlay" class="overlay" hidden>
+    <div class="dialog import-dialog">
+      <h2 id="importTitle"></h2>
+      <ul id="importPreview" class="import-preview"></ul>
+      <p id="importHint" class="muted import-hint"></p>
+      <div class="import-actions">
+        <button id="importMerge" class="primary"></button>
+        <button id="importReplace" class="danger" data-i18n="importReplace"></button>
+        <button id="importCancel" class="ghost" data-i18n="importCancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmOverlay" class="overlay" hidden>
+    <div class="dialog confirm-dialog" role="alertdialog" aria-labelledby="confirmMsg">
+      <p id="confirmMsg"></p>
+      <div class="import-actions">
+        <button id="confirmOk" class="danger"></button>
+        <button id="confirmCancel" class="ghost" data-i18n="cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportOverlay" class="overlay report-overlay" hidden>
+    <div class="report-sheet" role="dialog" aria-labelledby="reportTitleEl">
+      <div class="report-actions">
+        <button id="reportPrint" class="primary" data-i18n="reportPrint"></button>
+        <button id="reportClose" class="ghost" data-i18n="close"></button>
+      </div>
+      <div id="reportBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer>
+    <span data-i18n="unofficialNote"></span> ·
+    <span data-i18n="footerLocal"></span> ·
+    <a href="https://github.com/bmmmm/shieldchipiii" rel="noopener">GitHub ↗</a> ·
+    <a href="https://ko-fi.com/bmabma" rel="noopener">ko-fi ☕</a> ·
+    <span>GPL-3.0-or-later</span>
+  </footer>
+
+  <script src="js/sources.js?v=7e901c0"></script>
+  <script src="js/shapes.js?v=7e901c0"></script>
+  <script src="js/logic.js?v=7e901c0"></script>
+  <script src="js/ascii.js?v=7e901c0"></script>
+  <script src="js/i18n.js?v=7e901c0"></script>
+  <script src="js/store.js?v=7e901c0"></script>
+  <script src="js/share.js?v=7e901c0"></script>
+  <script src="js/render.js?v=7e901c0"></script>
+  <script src="js/qr.js?v=7e901c0"></script>
+  <script src="js/report.js?v=7e901c0"></script>
+  <script src="js/anim.js?v=7e901c0"></script>
+  <script src="js/anim-impact.js?v=7e901c0"></script>
+  <script src="js/anim-shatter.js?v=7e901c0"></script>
+  <script src="js/anim-wiper.js?v=7e901c0"></script>
+  <script src="js/anim-radar.js?v=7e901c0"></script>
+  <script src="js/app.js?v=7e901c0"></script>
+</body>
+</html>

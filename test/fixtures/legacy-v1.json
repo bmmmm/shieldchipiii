@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "cars": [
+    {
+      "id": "c_test1",
+      "name": "Golf 7",
+      "shape": "sedan",
+      "adjust": null,
+      "wheel": "left",
+      "up": "2026-07-14T10:00:00.000Z",
+      "chips": [
+        {
+          "id": "k_aa1",
+          "x": 0.25,
+          "y": 0.45,
+          "size": "c10",
+          "status": "new",
+          "fov": true,
+          "found": "2026-07-01",
+          "repairedAt": "",
+          "repairedBy": "",
+          "insurance": false,
+          "insuranceAt": "",
+          "note": "",
+          "up": "2026-07-14T10:00:00.000Z"
+        },
+        {
+          "id": "k_bb2",
+          "x": 0.7,
+          "y": 0.6,
+          "size": "crackM",
+          "status": "repaired",
+          "fov": false,
+          "found": "2026-05-12",
+          "repairedAt": "2026-05-20",
+          "repairedBy": "Carglass Bonn",
+          "insurance": true,
+          "insuranceAt": "2026-05-13",
+          "note": "upper right",
+          "up": "2026-07-14T10:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}
